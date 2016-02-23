@@ -4,7 +4,9 @@ classdef CutProblem < handle
     % non-decreasing in the parameter lambda whereas the sink-adjacent arcs
     % are non-increasing. Nodes are to be uniquely labeled in the set 1 :
     % nNodes, where nNodes is the number of nodes.
+    % ---------------------------------------------------------------------
     % Author: Quico Spaen
+    % ---------------------------------------------------------------------
     
     % TO DO:
     % - Add input checking to instance generation.

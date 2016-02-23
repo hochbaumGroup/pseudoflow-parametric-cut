@@ -27,6 +27,10 @@ function [ lambdas, cuts ] = hpfCompleteParametric( lowProblem, highProblem )
 %       cuts matrix is 1, then node i is in the source set of the cut for 
 %       lambda in ( lambdas[j-1], lambdas[j] ]. If the element is 0, then
 %       the node is in the sink set of the cut.
+% ---------------------------------------------------------------------
+% Author: Quico Spaen
+% ---------------------------------------------------------------------
+
 
 % tolerance for having equal slope
 TOL = 1E-12;
