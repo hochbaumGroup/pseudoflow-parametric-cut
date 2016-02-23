@@ -1,34 +1,69 @@
 classdef CutProblem < handle
+    % CUTPROBLEM class for representing parametric minimum cut problems on
+    % a directed graph. Problem assumes that the source-adjacent arcs are
+    % non-decreasing in the parameter lambda whereas the sink-adjacent arcs
+    % are non-increasing. Nodes are to be uniquely labeled in the set 1 :
+    % nNodes, where nNodes is the number of nodes.
+    % Author: Quico Spaen
+    
+    % TO DO:
+    % - Add input checking to instance generation.
     
     properties
+        % number of nodes in graph = n_1 + n_2 + n_3
         nNodes
         
+        % 1 x n_1 row vector with labels of nodes in the source set 
         sourceSet
+        % 1 x n_2 row vector with labels of nodes in the sink set
         sinkSet
         
+        % 1 x n_3 row vector with labels of nodes that in neither source nor sink set.
         capLabels
+        % n_3 x n_3 sparse matrix containing the capacities on the arc.
+        % Element (i,j) corresponds with an arc from node capLabels[ i ] to
+        % node capLabels[ j ].
         capacities
         
+        % n_3 x 1 column vector containing the capacity of the source
+        % adjacent arcs. The ith element is capacity of an arc from the
+        % source to node capLabels[ i ].
         sourceWeights
+        % n_3 x 1 column vector containing the capacity of the sink
+        % adjacent arcs. The ith element is capacity of an arc from the
+        % node capLabels[ i ] to the sink.
         sinkWeights
         
+        % n_3 x 1 column vector with non-negative entries containing the 
+        % lambda multiplier of the source adjacent arcs. 
         lambdaMultiplierSource
+        % n_3 x 1 column vector with non-negative entries containing the 
+        % lambda multiplier of the sink adjacent arcs. 
         lambdaMultiplierSink
         
+        % scalar: weight of arc between source and sink
         sourceSinkWeight
+        % scalar: lambda multiplier for arc from source to sink. Free in
+        % sign.
         sourceSinkLambdaMultiplier
         
+        % scalar: lambda value associated with this instance
         lambdaValue
         
+        % nNodes x 1 vector. 1 indicates that a node is in the source set.
+        % 0 indicates that the node is in the sink set.
         optimalCut
+        % scalar: value of the optimal cut evaluated at lambdaValue
         optimalCutValue
+        % scalar: weight of optimal cut function
         optimalCutWeight
+        % scalar: lambda coefficient of optimal cut function
         optimalCutLambda
-        
     end
     
     methods
         function obj = CutProblem( nNodes, sourceSet, sinkSet, capLabels, capacities, sourceWeights, sinkWeights, lambdaMultiplierSource, lambdaMultiplierSink, sourceSinkWeight, sourceSinkLambdaMultiplier, lambdaValue )
+            % initialize cut instance.
             obj.nNodes = nNodes;
             obj.sourceSet = sourceSet;
             obj.sinkSet = sinkSet;
@@ -53,7 +88,7 @@ classdef CutProblem < handle
                 zeros( nRemaining +2, 1 ), [ lambdaSinkWeights; lambdaSourceSinkWeight; 0 ] ];
             
             % inputs: Adjacency matrix graph, source, sink
-                if minimalTrue
+            if minimalTrue
                 [~,cut,~,~] = hpf( capacitiesComplete, nRemaining + 1, nRemaining + 2 );
             else
                 [~,reversedCut,~,~] = hpf( capacitiesComplete', nRemaining + 2, nRemaining + 1 );
