@@ -41,10 +41,6 @@ function [ lambdas, cuts ] = hpfCompleteParametric( lowProblem, highProblem )
 % tolerance for having equal slope
 TOL = 1E-12;
 
-display( lowProblem.lambdaValue )
-display( highProblem.lambdaValue )
-
-
 lowerSolved = false;
 % solve lower bound problem if necessary by finding minimal source set
 if isempty( lowProblem.optimalCutValue )
