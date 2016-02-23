@@ -63,7 +63,7 @@ classdef CutProblem < handle
     
     methods
         function obj = CutProblem( nNodes, sourceSet, sinkSet, capLabels, capacities, sourceWeights, sinkWeights, lambdaMultiplierSource, lambdaMultiplierSink, sourceSinkWeight, sourceSinkLambdaMultiplier, lambdaValue )
-            % initialize cut instance.
+            % initialize instance.
             obj.nNodes = nNodes;
             obj.sourceSet = sourceSet;
             obj.sinkSet = sinkSet;
@@ -79,23 +79,34 @@ classdef CutProblem < handle
         end
         
         function solve( obj, minimalTrue )
+            % subroutine to find optimal solution to the minimum cut
+            % instance evaluated at lambdaValue. If minimalTrue is true,
+            % then the minimal source set is found. Otherwise, it finds the
+            % maximal.
+            
+            % evaluate capacities at lambdaValue.
             lambdaSourceWeights = obj.sourceWeights + obj.lambdaValue .* obj.lambdaMultiplierSource;
             lambdaSinkWeights = obj.sinkWeights - obj.lambdaValue .* obj.lambdaMultiplierSink;
             lambdaSourceSinkWeight = obj.sourceSinkWeight + obj.lambdaValue * obj.sourceSinkLambdaMultiplier;
             
+            % extend capacities to include a node for the source set and a
+            % node for the sink set. Source is located n+1st row and sink
+            % is n+2nd row.
             nRemaining = length( obj.capLabels );
             capacitiesComplete = [ [ obj.capacities; lambdaSourceWeights'; zeros( 1, nRemaining ) ] ...
                 zeros( nRemaining +2, 1 ), [ lambdaSinkWeights; lambdaSourceSinkWeight; 0 ] ];
             
-            % inputs: Adjacency matrix graph, source, sink
+           % call HPF to solve maximum flow / minimum cut instance 
             if minimalTrue
                 [~,cut,~,~] = hpf( capacitiesComplete, nRemaining + 1, nRemaining + 2 );
-            else
+            else % reverse direction and source and sink to find maximal source set
                 [~,reversedCut,~,~] = hpf( capacitiesComplete', nRemaining + 2, nRemaining + 1 );
                 cut = 1 - reversedCut;
             end
             
+            % evaluate cut at un assigned nodes
             remainingCut = logical( cut( 1 : nRemaining ) );
+            % determine optimal cut function
             obj.optimalCutWeight = sum( sum( obj.capacities( remainingCut, logical( 1 - remainingCut ) ) ) ) + sum( obj.sourceWeights( logical( 1 - remainingCut ) ) ) + sum( obj.sinkWeights( remainingCut ) ) + obj.sourceSinkWeight;
             obj.optimalCutLambda = sum( obj.lambdaMultiplierSource( logical( 1 - remainingCut ) ) ) - sum( obj.lambdaMultiplierSink( remainingCut ) ) + obj.sourceSinkLambdaMultiplier;
             
@@ -103,47 +114,71 @@ classdef CutProblem < handle
             cutAll = zeros( obj.nNodes, 1);
             cutAll( obj.capLabels( remainingCut ) ) = 1;
             cutAll( obj.sourceSet ) = 1;
-            
             obj.optimalCut = cutAll;
+            
+            % evaluate cut function at lambdaValue
             obj.optimalCutValue = obj.optimalCutWeight + obj.lambdaValue * obj.optimalCutLambda;
         end
         
         function obj = copyNewLambda( self, lambdaValue )
+            % copy object with new value of lambda
             obj = CutProblem( self.nNodes, self.sourceSet, self.sinkSet, self.capLabels, self.capacities, self.sourceWeights, self.sinkWeights, self.lambdaMultiplierSource, self.lambdaMultiplierSink, self.sourceSinkWeight, self.sourceSinkLambdaMultiplier, lambdaValue );
         end
         
         function reduceUpper( self, highProblem )
+            % contract sinkset nodes in optimal cut with sink set
+            
+            % get inidicator which nodes are in the source and sink set
             remainingIndicators = logical( highProblem.optimalCut( highProblem.capLabels ) );
             newSinkSetIndicators = not( remainingIndicators );
             
+            % adjust sink set and remaining nodes
             self.sinkSet = [ self.sinkSet self.capLabels( newSinkSetIndicators ) ];
             self.capLabels = self.capLabels( remainingIndicators );
             
+            % update arc between source and sink
             self.sourceSinkWeight = self.sourceSinkWeight + sum( self.sourceWeights( newSinkSetIndicators ) );
             self.sourceSinkLambdaMultiplier = self.sourceSinkLambdaMultiplier + sum( self.lambdaMultiplierSource( newSinkSetIndicators ) );
-            try
+            
+            % adjust weights of source and sink adjacent arcs
+            try % both matrices may be empty but of slightly different size. e.g. 0x1 and 0x0.
                 self.sinkWeights = self.sinkWeights( remainingIndicators ) + sum( self.capacities( remainingIndicators, newSinkSetIndicators), 2 );
             catch
                 self.sinkWeights = [];
             end
             self.sourceWeights = self.sourceWeights( remainingIndicators );
+            
+            % update capacities matrix
             self.capacities = self.capacities( remainingIndicators, remainingIndicators );
+            
+            % update lambda multiplier on source and sink adjacent arcs
             self.lambdaMultiplierSource = self.lambdaMultiplierSource( remainingIndicators );
             self.lambdaMultiplierSink = self.lambdaMultiplierSink( remainingIndicators );
         end
         
         function reduceLower( self, lowProblem )
+            % contract sinkset nodes in optimal cut with sink set
+            
+            % get inidicator which nodes are in the source and sink set
             newSourceSetIndicators = logical( lowProblem.optimalCut( lowProblem.capLabels ) );
             remainingIndicators = not( newSourceSetIndicators );
             
+            % adjust source set and remaining nodes
             self.sourceSet = [ self.sourceSet self.capLabels( newSourceSetIndicators ) ];
             self.capLabels = self.capLabels( remainingIndicators );
             
+             % update arc between source and sink
             self.sourceSinkWeight = self.sourceSinkWeight + sum( self.sinkWeights( newSourceSetIndicators ) );
             self.sourceSinkLambdaMultiplier = self.sourceSinkLambdaMultiplier - sum( self.lambdaMultiplierSink( newSourceSetIndicators ) );
+            
+            % update weight on source and sink adjacent arcs
             self.sinkWeights = self.sinkWeights( remainingIndicators );
             self.sourceWeights = self.sourceWeights( remainingIndicators )  + sum( self.capacities( newSourceSetIndicators, remainingIndicators ), 1 )';
+            
+            % update capacities matrix
             self.capacities = self.capacities( remainingIndicators, remainingIndicators );
+            
+            % update lambda multiplier on source and sink adjacent arcs
             self.lambdaMultiplierSource = self.lambdaMultiplierSource( remainingIndicators );
             self.lambdaMultiplierSink = self.lambdaMultiplierSink( remainingIndicators );
         end
