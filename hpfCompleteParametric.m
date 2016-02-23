@@ -2,7 +2,8 @@ function [ lambdas, cuts ] = hpfCompleteParametric( lowProblem, highProblem )
 % finds all breakpoints in lambda range ( low, high]. Note that if lambda =
 % low is a breakpoint, then this is not included.
 
-tol = 1E-12;
+% tolerance for having equal slope
+TOL = 1E-12;
 
 display( lowProblem.lambdaValue )
 display( highProblem.lambdaValue )
@@ -25,7 +26,7 @@ lambdas = [];
 cuts = zeros( lowProblem.nNodes, 0 );
 
 % find intersection
-if abs( highProblem.optimalCutLambda - lowProblem.optimalCutLambda ) > tol
+if abs( highProblem.optimalCutLambda - lowProblem.optimalCutLambda ) > TOL
     lambdaIntersect =  ( lowProblem.optimalCutWeight - highProblem.optimalCutWeight ) / ( highProblem.optimalCutLambda - lowProblem.optimalCutLambda );
 else
     lambdaIntersect = NaN;
@@ -33,7 +34,7 @@ end
 
 % fprintf('Low: %f, High: %f, Intersect: %f\n', lowProblem.lambdaValue,highProblem.lambdaValue,lambdaIntersect )
 
-if lambdaIntersect + tol < highProblem.lambdaValue && lambdaIntersect - tol > lowProblem.lambdaValue
+if lambdaIntersect + TOL < highProblem.lambdaValue && lambdaIntersect - TOL > lowProblem.lambdaValue
     upperBoundIntersect = highProblem.copyNewLambda( lambdaIntersect );
     upperBoundIntersect.reduceUpper( highProblem );
 
