@@ -3,7 +3,11 @@
 % Author: Quico Spaen
 % -------------------------------------------------------------------------
 % Solve a parametric minimum cut problem from 1 (source) to 8 (sink) for 
-% lambda in range [0,2]. It correctly identifies breakpoints: [1, 4/3, 2]
+% lambda in range [0,2]. It correctly identifies breakpoints: [1, 4/3] 
+% (2 is not a break point) and displays the cut for ranges in [0,1], 
+% (1,4/3], (4/3, 2]. Note that the lambdas vector gives the upper bound 
+% for each lambda interval.
+%
 % The arcs in the graph are as follows:
 % (1,2) = 7
 % (1,3) = 7
