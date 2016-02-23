@@ -13,6 +13,12 @@ function [ lambdas, cuts ] = hpfCompleteParametric( lowProblem, highProblem )
 % on sink adjacent arcs) by flipping source and sink and reversing the
 % direction of the arcs.
 %
+% Theoretical background:
+% - D. Hochbaum (2008). The Pseudoflow Algorithm: A New Algorithm for the 
+%   Maximum-Flow Problem. Operations Research 56(4):992-1009.
+% - D. Hochbaum, (2003) Efficient Algorithms for the Inverse Spanning-Tree 
+%   Problem. Operations Research 51(5):785-797.
+%
 % ---------- INPUT ---------------
 % lowProblem: minimum cut problem instance instantiated as an object of
 %       class Cutproblem. Should have lambda value of lambdaLow.
