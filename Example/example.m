@@ -26,10 +26,13 @@
 % (7,8) = 3
 
 % compile mex file for running c Library in Matlab
-mex -largeArrayDims hpf.c
+mex -largeArrayDims ../hpf.c
 
 % load data
 load('example.mat')
+
+% add path to ensure that hpf and Cutproblem can be called
+addpath('..')
 
 % instantiated cut instances. One with lambda = 0 (lower bound) and one
 % with lambda = 2 (upper bound)
