@@ -91,6 +91,11 @@ classdef CutProblem < handle
             lambdaSinkWeights = obj.sinkWeights - obj.lambdaValue .* obj.lambdaMultiplierSink;
             lambdaSourceSinkWeight = obj.sourceSinkWeight + obj.lambdaValue * obj.sourceSinkLambdaMultiplier;
             
+            % round negative arcs to zero
+            lambdaSourceWeights = (lambdaSourceWeights + abs(lambdaSourceWeights))/2;
+            lambdaSinkWeights = (lambdaSinkWeights + abs(lambdaSinkWeights))/2;
+            lambdaSourceSinkWeight = (lambdaSourceSinkWeight + abs(lambdaSourceSinkWeight))/2;
+            
             % extend capacities to include a node for the source set and a
             % node for the sink set. Source is located n+1st row and sink
             % is n+2nd row.
