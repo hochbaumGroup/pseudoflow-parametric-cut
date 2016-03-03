@@ -98,7 +98,19 @@ classdef CutProblem < handle
             capacitiesComplete = [ [ obj.capacities; lambdaSourceWeights'; zeros( 1, nRemaining ) ] ...
                 zeros( nRemaining +2, 1 ), [ lambdaSinkWeights; lambdaSourceSinkWeight; 0 ] ];
             
-           % call HPF to solve maximum flow / minimum cut instance 
+            % call HPF to solve maximum flow / minimum cut instance
+            if nRemaining == 0
+                % fixes hpf crash when only a source and sink node in network.
+                cut = [ 1 0 ];
+            else
+                if minimalTrue
+                    [~,cut,~,~] = hpf( capacitiesComplete, nRemaining + 1, nRemaining + 2 );
+                else % reverse direction and source and sink to find maximal source set
+                    [~,reversedCut,~,~] = hpf( capacitiesComplete', nRemaining + 2, nRemaining + 1 );
+                    cut = 1 - reversedCut;
+                end
+            end
+           
             if minimalTrue
                 [~,cut,~,~] = hpf( capacitiesComplete, nRemaining + 1, nRemaining + 2 );
             else % reverse direction and source and sink to find maximal source set
