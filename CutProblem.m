@@ -110,13 +110,6 @@ classdef CutProblem < handle
                     cut = 1 - reversedCut;
                 end
             end
-           
-            if minimalTrue
-                [~,cut,~,~] = hpf( capacitiesComplete, nRemaining + 1, nRemaining + 2 );
-            else % reverse direction and source and sink to find maximal source set
-                [~,reversedCut,~,~] = hpf( capacitiesComplete', nRemaining + 2, nRemaining + 1 );
-                cut = 1 - reversedCut;
-            end
             
             % evaluate cut at un assigned nodes
             remainingCut = logical( cut( 1 : nRemaining ) );
