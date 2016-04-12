@@ -1137,7 +1137,7 @@ recoverFlow
 			decompose(tempNode, source, &iteration);
 		}
 	}
-	;
+	mxFree( nodePtrArray );
 }
 
 static void readData (const mxArray* array_ptr)
