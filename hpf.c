@@ -57,13 +57,13 @@
  * Pseudoflow/maxflow.html                                               *
  *************************************************************************/
 
-#include "mex.h"
-#include "matrix.h"
-#include <stdio.h>
+//#include "matrix.h"
+#include "stdio.h"
+#include "assert.h"
 //#include <sys/time.h>
 //#include <sys/resource.h>
-#include <stdlib.h>
-#include <time.h>
+#include "stdlib.h"
+#include "time.h"
 //#include <unistd.h>
 
 /*************************************************************************
@@ -77,7 +77,35 @@ typedef long int lint;
 typedef long long int llint;
 typedef unsigned long long int ullint;
 
-struct node;
+typedef struct cutProblem
+{
+	double lambdaValue;
+	/* Arc list */
+	/* Nod list */
+	double cutValue;
+	double cutMultiplier;
+	double cutConstant;
+	/* source set */
+	/* sink set */
+	double sourceSinkArcCapacity;
+	double sourceSinkArcConstant;
+	double sourceSinkArcMultiplier;
+} CutProblem;
+
+typedef struct
+{
+	uint label;
+	uint numAdjacent;
+} NodeSuper;
+
+typedef struct
+{
+	NodeSuper *from;
+	NodeSuper *to;
+	double capacity;
+	double constant;
+	double multiplier;
+} ArcSuper;
 
 typedef struct arc
 	{
@@ -119,24 +147,13 @@ typedef struct root
 #define FALSE (0)
 #endif
 
-/* Input Arguments */
-#define	AFFIN_MAT	prhs[0]
-#define SOURCE		prhs[1]
-#define SINK		prhs[2]
-
-/* Output Arguments */
-#define	CUT_VAL	plhs[0]
-#define	SEGMENTS plhs[1]
-#define TIMES plhs[2]
-#define STATS plhs[3]
-
 /*************************************************************************
 Global variables
 *************************************************************************/
-static uint numNodes = 0;
-static uint numArcs = 0;
-static uint source = 0;
-static uint sink = 0;
+static uint numNodes = NULL;
+static uint numArcs = NULL;
+static uint source;
+static uint sink;
 static uint highestStrongLabel = 1;
 
 static double numArcScans = 0;
@@ -149,7 +166,12 @@ static Node *nodesList = NULL;
 static Root *strongRoots = NULL;
 static uint *labelCount = NULL;
 static Arc *arcList = NULL;
+static NodeSuper *nodeListSuper = NULL;
+static ArcSuper *arcListSuper = NULL;
 static uint lowestPositiveExcessNode = 0;
+
+static uint useParametricCut = 0;
+static uint roundNegativeWeight = NULL;
 
 double dabs(double value)
 {
@@ -183,81 +205,6 @@ of the excess (deficit if negative).
 	else return 0;
 }
 
-bool isNonNegative(const mxArray* affinityMat)
-/*************************************************************************
-isNonNegative
-*************************************************************************/
-{
-  double  *pr, *pi;
-  mwIndex  *ir, *jc;
-  mwSize      col, total=0;
-  mwIndex   starting_row_index, stopping_row_index, current_row_index;
-  mwSize      n;
-
-  /* Get the starting positions of all four data arrays. */
-  pr = mxGetPr(affinityMat);
-  pi = mxGetPi(affinityMat);
-  ir = mxGetIr(affinityMat);
-  jc = mxGetJc(affinityMat);
-
-  /* Display the nonzero elements of the sparse array. */
-  n = mxGetN(affinityMat);
-  for (col=0; col<n; col++)  {
-    starting_row_index = jc[col];
-    stopping_row_index = jc[col+1];
-    if (starting_row_index == stopping_row_index)
-      continue;
-    else
-	{
-      for (current_row_index = starting_row_index; current_row_index < stopping_row_index; current_row_index++)
-	  {
-		  if (pr[total++] < 0)
-		  {
-			  return(false);
-		  }
-	  }
-	}
-  }
-  return(true);
-}
-
-bool isDiagonalZero(const mxArray* affinityMat)
-/*************************************************************************
-isDiagonalZero
-*************************************************************************/
-{
-double  *pr, *pi;
-  mwIndex  *ir, *jc;
-  mwSize      col, total=0;
-  mwIndex   starting_row_index, stopping_row_index, current_row_index;
-  mwSize      n;
-
-  /* Get the starting positions of all four data arrays. */
-  pr = mxGetPr(affinityMat);
-  pi = mxGetPi(affinityMat);
-  ir = mxGetIr(affinityMat);
-  jc = mxGetJc(affinityMat);
-
-  /* Display the nonzero elements of the sparse array. */
-  n = mxGetN(affinityMat);
-  for (col=0; col<n; col++)  {
-    starting_row_index = jc[col];
-    stopping_row_index = jc[col+1];
-    if (starting_row_index == stopping_row_index)
-      continue;
-    else {
-      for (current_row_index = starting_row_index; current_row_index < stopping_row_index; current_row_index++)
-	  {
-		  if ((ir[current_row_index] == col) && (pr[total++] != 0))
-		  {
-			  return(false);
-		  }
-	  }
-	}
-  }
-  return(true);
-}
-
 static void createOutOfTree (Node *nd)
 {
 /*************************************************************************
@@ -265,9 +212,10 @@ createOutOfTree
 *************************************************************************/
 	if (nd->numAdjacent)
 	{
-		if ((nd->outOfTree = (Arc **) mxMalloc (nd->numAdjacent * sizeof (Arc *))) == NULL)
+		if ((nd->outOfTree = (Arc **) malloc (nd->numAdjacent * sizeof (Arc *))) == NULL)
 		{
-			mexErrMsgTxt("Out of memory\n");
+			printf("Out of memory\n");
+			exit(0);
 		}
 	}
 }
@@ -282,6 +230,18 @@ initializeArc
 	ac->capacity = 0;
 	ac->flow = 0;
 	ac->direction = 1;
+}
+
+static void initializeArcSuper(ArcSuper *ac)
+{
+	/*************************************************************************
+	initializeArcSuper
+	*************************************************************************/
+	ac->from = NULL;
+	ac->to = NULL;
+	ac->capacity = 0;
+	ac->constant = 0;
+	ac->multiplier = 0;
 }
 
 static void liftAll (Node *rootNode)
@@ -681,6 +641,16 @@ initializeNode
 	nd->number = n;
 	nd->outOfTree = NULL;
 }
+
+static void initializeNodeSuper(NodeSuper *nd, const uint n)
+{
+	/*************************************************************************
+	initializeNodeSuper
+	*************************************************************************/
+	nd->label = n;
+	nd->numAdjacent = 0;
+}
+
 static void freeRoot (Root *rt)
 {
 /*************************************************************************
@@ -701,19 +671,19 @@ freeMemory
 		freeRoot (&strongRoots[i]);
 	}
 
-	mxFree(strongRoots);
+	free(strongRoots);
 
 	/*for (i=0; i<numNodes; ++i)
 	{
 		if (nodesList[i].outOfTree)
 		{
-			mxFree(nodesList[i].outOfTree);
+			free(nodesList[i].outOfTree);
 		}
 	}*/
 
-	mxFree(nodesList);
-	mxFree(labelCount);
-	mxFree(arcList);
+	free(nodesList);
+	free(labelCount);
+	free(arcList);
 }
 static void processRoot (Node *strongRoot)
 {
@@ -890,9 +860,12 @@ checkOptimality
 
 	Arc *tempArc;
 
-	excess = (/*llint*/double *) mxMalloc (numNodes * sizeof (double/*llint*/));
+	excess = (/*llint*/double *) malloc (numNodes * sizeof (double/*llint*/));
 	if (!excess)
-		mexErrMsgTxt("Out of memory\n");
+	{
+		printf("Out of memory\n");
+		exit(0);
+	}
 
 	// Pushing depicits from all sink adjacent nodes to the sink
 	for (i=0; i<nodesList[sink-1].numOutOfTree; ++i)
@@ -930,7 +903,7 @@ checkOptimality
 		if ((isExcess(arcList[i].flow - arcList[i].capacity)>0) || (isExcess(arcList[i].flow) < 0))
 		{
 			check = 0;
-			mexPrintf("Warning - Capacity constraint violated on arc (%d, %d). Flow = %d, capacity = %d\n",
+			printf("Warning - Capacity constraint violated on arc (%d, %d). Flow = %d, capacity = %d\n",
 				   arcList[i].from->number,
 				   arcList[i].to->number,
 				   arcList[i].flow,
@@ -947,7 +920,7 @@ checkOptimality
 			if (isExcess(excess[i]))
 			{
 				check = 0;
-				mexPrintf ("Warning - Flow balance constraint violated in node %d. Excess = %lld\n",
+				printf ("Warning - Flow balance constraint violated in node %d. Excess = %lld\n",
 						i+1,
 						excess[i]);
 			}
@@ -959,15 +932,15 @@ checkOptimality
 	if (isExcess(excess[sink-1] - mincut) != 0)//(excess[sink-1] != mincut)
 	{
 		check = 0;
-		mexWarnMsgTxt("Flow is not optimal - max flow does not equal min cut!\n");
+		printf("Warning - Flow is not optimal - max flow does not equal min cut!\n");
 	}
 
 // 	if (check)
 // 	{
-// 		mexPrintf ("Solution checks as optimal. \t Max Flow: \t %lld\n", mincut);
+// 		printf ("Solution checks as optimal. \t Max Flow: \t %lld\n", mincut);
 // 	}
 
-	mxFree (excess);
+	free (excess);
 	excess = NULL;
 	return mincut;
 }
@@ -1078,9 +1051,10 @@ recoverFlow
 
 	Node **nodePtrArray;
 
-	if ((nodePtrArray = (Node **) mxMalloc (numNodes * sizeof (Node *))) == NULL)
+	if ((nodePtrArray = (Node **) malloc (numNodes * sizeof (Node *))) == NULL)
 	{
-		mexErrMsgTxt("Out of memory\n");
+		printf("Out of memory\n");
+		exit(0);
 	}
 
 	for (i=0; i < numNodes ; i++)
@@ -1137,115 +1111,231 @@ recoverFlow
 			decompose(tempNode, source, &iteration);
 		}
 	}
-	mxFree( nodePtrArray );
+	
+	free(nodePtrArray);
 }
 
-static void readData (const mxArray* array_ptr)
+static void readData(char *filename)
 /*************************************************************************
 readData
 *************************************************************************/
 {
-	double  *pr, *pi;
-	mwIndex  *ir, *jc;
-	mwIndex   starting_row_index,
-		stopping_row_index,
-		current_row_index;
-	mwSize col,
-		n = 0,
-		total=0;
-	uint from,
-		to,
-		first=0,
-	/*	capacity,*/
-		i = 0;
-	double capacity;
+	char buffer[32768];
+	char lineIndicator;
 
-	/* Get the starting positions of all four data arrays. */
-	pr = mxGetPr(array_ptr);
-	pi = mxGetPi(array_ptr);
-	ir = mxGetIr(array_ptr);
-	jc = mxGetJc(array_ptr);
+	/* define parameters */
+	uint numNodes;
+	uint numArcs;
+	uint arcCount = 0;
+	uint currentNode;
+	uint isSourceAssigned = 0;
+	uint isSinkAssigned = 0;
+	char sourceSinkIndicator;
+	double lambdaLow;
+	double lambdaHigh;
+	uint from;
+	uint to;
+	double constantCapacity;
+	double multiplierCapacity;
 
-	/* Number of nodes */
-	numNodes = mxGetN(array_ptr);
+	// open input file
+	FILE* f = fopen(filename, "r");
+	assert(f);
 
-	if ((nodesList = (Node *) mxMalloc (numNodes * sizeof (Node))) == NULL)
-		mexErrMsgTxt("Could not allocate memory.\n");
-	if ((strongRoots = (Root *) mxMalloc (numNodes * sizeof (Root))) == NULL)
-		mexErrMsgTxt("Could not allocate memory.\n");
-	if ((labelCount = (uint *) mxMalloc (numNodes * sizeof (uint))) == NULL)
-		mexErrMsgTxt("Could not allocate memory.\n");
-
-	/* Number of Arcs */
-	numArcs = *(mxGetJc(array_ptr) + numNodes);
-	if ((arcList = (Arc *) mxMalloc (numArcs * sizeof (Arc))) == NULL)
-		mexErrMsgTxt("Could not allocate memory.\n");
-
-	/* Initialization */
-	for (i=0; i<numNodes; ++i)
+	/* Read lines of input file */
+	while (1)
 	{
-		initializeRoot (&strongRoots[i]);
-		initializeNode (&nodesList[i], (i+1));
-		labelCount[i] = 0;
-	}
-
-	for (i=0; i<numArcs; ++i)
-	{
-		initializeArc (&arcList[i]);
-	}
-
-	/* Reading Arcs Info */
-	for (col=0; (uint)col<numNodes; col++)
-	{
-		starting_row_index = jc[col];
-		stopping_row_index = jc[col+1];
-		if (starting_row_index != stopping_row_index)
+		if (fgets(buffer, sizeof buffer, f) != NULL)
 		{
-			for (current_row_index = starting_row_index; current_row_index < stopping_row_index; current_row_index++)
+			switch (*buffer)
 			{
-				/* Reading arc parameters */
-				from = ir[current_row_index];
-				to = col;
-				capacity = /*(uint)*/(double)pr[total++];
-//				printf("%e,  %e\n", pr[total-1], capacity);
+			case 'p': /* initialize problem */
+				sscanf(buffer, "p %u %u %lf %lf %u\n", &numNodes, &numArcs, &lambdaLow, &lambdaHigh, &roundNegativeWeight);
+				printf("numNodes: %u, numArcs: %u, lambdaLow: %lf, lambdaHigh: %lf\n, round negative weight: %u\n", numNodes, numArcs, lambdaLow, lambdaHigh, roundNegativeWeight);
 
-				arcList[first].from = &nodesList[from];
-				arcList[first].to = &nodesList[to];
-				arcList[first].capacity = capacity;
+				if ((nodeListSuper = (NodeSuper *)malloc(numNodes * sizeof(NodeSuper))) == NULL)
+				{
+					printf("Could not allocate memory.\n");
+					exit(0);
+				}
+				if ((arcListSuper = (ArcSuper *)malloc(numArcs * sizeof(ArcSuper))) == NULL)
+				{
+					printf("Could not allocate memory.\n");
+					exit(0);
+				}
 
-				++ first;
+				uint i;
 
-				++ nodesList[from].numAdjacent;
-				++ nodesList[to].numAdjacent;
+				/* Initialization */
+				for (i = 0; i < numNodes; ++i)
+				{
+					initializeNodeSuper(&nodeListSuper[i], i);
+				}
+				for (i = 0; i < numArcs; ++i)
+				{
+					initializeArcSuper(&arcListSuper[i]);
+				}
+
+				if (lambdaLow == lambdaHigh)
+				{
+					useParametricCut = 0;
+				}
+
+				break;
+			case 'n':
+				sscanf(buffer, "n %i %c\n", &currentNode, &sourceSinkIndicator);
+				printf("Node: %u is of type %c\n", currentNode, sourceSinkIndicator);
+				if (sourceSinkIndicator == 's')
+				{
+					/* check if source is valid */
+					if (currentNode >= numNodes || currentNode < 0)
+					{
+						printf("Nodes are labeled from 0 to <number of nodes>  - 1\n");
+						exit(0);
+					}
+					/* check if source is assigned */
+					if (isSourceAssigned)
+					{
+						printf("Source is already defined\n");
+						exit(0);
+					}
+					else
+					{
+						source = currentNode;
+						isSourceAssigned = 1;
+						printf("Node %u is the source\n", source);
+					}
+				}
+				else if (sourceSinkIndicator == 't')
+				{
+					/* check if sink is valid */
+					if (currentNode >= numNodes || currentNode < 0)
+					{
+						printf("Nodes are labeled from 0 to <number of nodes>  - 1\n");
+						exit(0);
+					}
+					/* check if sink is assigned */
+					if (isSinkAssigned)
+					{
+						printf("Sink is already defined\n");
+						exit(0);
+					}
+					else
+					{
+						sink = currentNode;
+						isSinkAssigned = 1;
+						printf("Node %u is the sink\n", sink);
+					}
+				}
+				else
+				{
+					printf("Node type: %c is unknown\n", sourceSinkIndicator);
+					exit(0);
+				}
+
+				break;
+			case 'a':
+				sscanf(buffer, "a %u %u %lf %lf\n", &from, &to, &constantCapacity, &multiplierCapacity);
+				printf("Arc: from: %u to %u with capacity: %lf and multiplier %lf\n", from, to, constantCapacity, multiplierCapacity);
+
+				/* assign arc */
+				if (from < 0 || to < 0 || from >= numNodes || to >= numNodes)
+				{
+					printf("Nodes are labeled from 0 to <number of nodes>  - 1\n");
+					exit(0);
+				}
+				else if (from == to)
+				{
+					printf("Node %u has a self loop which is not allowed\n", from);
+					exit(0);
+				}
+				else if (multiplierCapacity > 0 && from != source)
+				{
+					printf("Only source adjacent arcs can have a strictly positive capacity multiplier\n");
+					exit(0);
+				}
+				else if (multiplierCapacity < 0 && to != sink)
+				{
+					printf("Only sink adjacent arcs can have a strictly negative capacity multiplier\n");
+					exit(0);
+				}
+				else if (arcCount >= numArcs)
+				{
+					printf("Incorrect number of arcs specified\n");
+					exit(0);
+				}
+
+				arcListSuper[arcCount].constant = constantCapacity;
+				arcListSuper[arcCount].multiplier = multiplierCapacity;
+				arcListSuper[arcCount].from = &nodeListSuper[from];
+				arcListSuper[arcCount].to = &nodeListSuper[to];
+
+				++arcCount;
+
+				++nodeListSuper[from].numAdjacent;
+				++nodeListSuper[to].numAdjacent;
 			}
+		}
+		else if (feof(f))
+		{
+			break;
+		}
+		else
+		{
+			printf("I/O error while reading %s\n", filename);
+			exit(0);
 		}
 	}
 
-	/* Create memory structures */
-	for (i=0; i<numNodes; ++i)
+	// close file
+	fclose(f);
+
+	/* check if correct number of arcs has been specified */
+	if (arcCount != numArcs)
 	{
-		createOutOfTree (&nodesList[i]);
+		printf("Incorrect number of arcs specified\n");
+		exit(0);
 	}
-
-	for (i=0; i<numArcs; i++)
+	else if (isSourceAssigned == 0)
 	{
-		to = arcList[i].to->number;
-		from = arcList[i].from->number;
-		capacity = arcList[i].capacity;
-
-		if (!((source == to) || (sink == from) || (from == to)))
-		{
-			if ((source == from) && (to == sink))
-			{
-				arcList[i].flow = capacity;
-			} else if (to == sink) {
-				addOutOfTreeNode (&nodesList[to-1], &arcList[i]);
-			} else {
-				addOutOfTreeNode (&nodesList[from-1], &arcList[i]);
-			}
-		}
+		printf("Source is not assigned\n");
+		exit(0);
+	}
+	else if (isSinkAssigned == 0)
+	{
+		printf("Sink is not assigned\n");
+		exit(0);
 	}
 }
+
+
+//static void createMemStructures( )
+//{
+//	/* create memory structures */
+//	for (i=0; i<numnodes; ++i)
+//	{
+//		createoutoftree (&nodeslist[i]);
+//	}
+//
+//	for (i=0; i<numarcs; i++)
+//	{
+//		to = arclist[i].to->number;
+//		from = arclist[i].from->number;
+//		capacity = arclist[i].capacity;
+//
+//		if (!((source == to) || (sink == from) || (from == to)))
+//		{
+//			if ((source == from) && (to == sink))
+//			{
+//				arclist[i].flow = capacity;
+//			} else if (to == sink) {
+//				addoutoftreenode (&nodeslist[to-1], &arclist[i]);
+//			} else {
+//				addoutoftreenode (&nodeslist[from-1], &arclist[i]);
+//			}
+//		}
+//	}
+//}
 
 
 static void pseudoflowPhase1 (void)
@@ -1260,89 +1350,96 @@ pseudoflowPhase1
 	}
 }
 
-static void displayCut (double* segs, double* cut, const uint gap)
+static void printOutput (char *filename, double *times )
 {
 /*************************************************************************
-displayCut
+printOutput
 *************************************************************************/
-	uint i;
+	double stats[5];
+	stats[0] = numArcScans;
+	stats[1] = numMergers;
+	stats[2] = numPushes;
+	stats[3] = numRelabels;
+	stats[4] = numGaps;
+	
+	// open outputFile
+	FILE* f = fopen(filename,"w");
 
+	// compute flow value
+	double cut = 0;
+
+	uint i;
+	for (i = 0; i<numArcs; ++i)
+	{
+		if ((arcList[i].from->label >= numNodes) && (arcList[i].to->label < numNodes))
+		{
+			cut += arcList[i].capacity;
+		}
+	}
+
+	// print value
+	fprintf(f,"%lf\n", cut);
+
+	// findSourceSet
 	for (i=0; i<numNodes; ++i)
 	{
-		if (nodesList[i].label >= gap)
+		if (nodesList[i].label >= numNodes)
 		{
-			segs[nodesList[i].number-1] = 1;
+			fprintf(f, "1");
+		}
+		else
+		{
+			fprintf(f, "0");
+		}
+		if (i < numNodes - 1)
+			fprintf(f, ",");
+		else
+		{
+			fprintf(f, "\n");
 		}
 	}
 
-	// This is added by Cheng Lu
-	*cut = 0;
-	for (i=0; i<numArcs; ++i)
+	for (i = 0; i < 3; i++)
 	{
-		if ((arcList[i].from->label >= gap) && (arcList[i].to->label < gap))
+		fprintf(f, "%lf", times[i]);
+		if (i < 2)
 		{
-			*cut += arcList[i].capacity;
+			fprintf(f, ",");
+		}
+		else
+		{
+			fprintf(f, "\n");
 		}
 	}
+
+	for (i = 0; i < 5; i++)
+	{
+		fprintf(f, "%lf", stats[i]);
+		if (i < 4)
+		{
+			fprintf(f, ",");
+		}
+		else
+		{
+			fprintf(f, "\n");
+		}
+	}
+
+	// close output file
+	fclose(f);
 }
 
-void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray*prhs[] )
+
+int main(int argc, char **argv)
 /*************************************************************************
-mexFunction - Main function
+main - Main function
 *************************************************************************/
 {
-	double *segs = 0,
-		*cut = 0,
-		*times = 0,
-		*stats = 0;
-	uint n = 0, // Number of nodes / vertices in the graph.
-		m = 0; // Number of ARCS in the graph (edge is two arcs)
-	uint gap;
+	// check number of input arguments
+	assert(argc == 3);
+
 	/*ullint*/double flow = 0;
 	double readStart, readEnd, initStart, initEnd, solveStart, solveEnd;
-
-    /* Check for proper arguments */
-    if (nrhs != 3) {
-        mexErrMsgTxt("Usage [segmentations, cut] = hpf(Similarity Matrix, source node, sink node)");
-    } else if (nlhs > 4) {
-        mexErrMsgTxt("Too many output arguments.");
-    } else if (mxGetNumberOfDimensions(AFFIN_MAT) > 2) {
-        mexErrMsgTxt("Affinity matrix must be a 2D array");
-    } else if (mxGetM(AFFIN_MAT) != mxGetN(AFFIN_MAT)) {
-        mexErrMsgTxt("Affinity matrix must a square matrix");
-    } else if (mxIsEmpty(AFFIN_MAT)) {
-        mexErrMsgTxt("Input argument is empty\n");
-    } else if (mxIsComplex(AFFIN_MAT)) {
-        mexErrMsgTxt("Affinity matrix must consists of real number (non-complex)");
-    } else if (!mxIsNumeric(AFFIN_MAT)) {
-        mexErrMsgTxt("Affinity matrix must consists of numeric values");
-    } else if (!mxIsSparse(AFFIN_MAT)) {
-        mexErrMsgTxt("Affinity matrix must be sparse (use sparse(Affinity matrix) function)");
-    } else if (!isDiagonalZero(AFFIN_MAT)) {
-        mexErrMsgTxt("The disimilarity of an elelment to itself Must be Zero");
-	} else if (!isNonNegative(AFFIN_MAT)) {
-        mexErrMsgTxt("Affinity matrix must consists of non-negative values");
-	}
-
-	n = mxGetN(AFFIN_MAT);
-
-	source = (uint)mxGetScalar(SOURCE);
-	sink = (uint)mxGetScalar(SINK);
-
-	if ((source > n) || (source < 0) || (sink > n) || (sink < 0))
-		mexErrMsgTxt("Error assigning source or sink nodes");
-
-	/* Create a matrix for the return argument */
-    SEGMENTS = mxCreateDoubleMatrix(1, n, mxREAL);
-    CUT_VAL  = mxCreateDoubleMatrix(1, 1, mxREAL);
-	TIMES = mxCreateDoubleMatrix(1, 3, mxREAL);
-	STATS = mxCreateDoubleMatrix(1, 5, mxREAL);
-
-    /* Assign pointers to the output parameters */
-    segs = mxGetPr(SEGMENTS);
-    cut  = mxGetPr(CUT_VAL);
-	times = mxGetPr(TIMES);
-	stats = mxGetPr(STATS);
 
 	numArcScans = 0;
 	numMergers = 0;
@@ -1351,37 +1448,30 @@ mexFunction - Main function
 	numGaps = 0;
 
 	readStart = clock();
-	readData(AFFIN_MAT);
+	// readInput
+	readData( argv[1] );
 	readEnd = clock();
+
+	exit(1);
 	initStart = clock();
-	simpleInitialization ();
+	// initialize
+	simpleInitialization();
 	initEnd = clock();
+
 	solveStart = clock();
-	pseudoflowPhase1 ();
+	// solve
+	pseudoflowPhase1();
 	solveEnd = clock();
 
+	double times[3];
 	times[0] = (readEnd - readStart)/CLOCKS_PER_SEC;
 	times[1] = (initEnd - initStart)/CLOCKS_PER_SEC;
 	times[2] = (solveEnd - solveStart)/CLOCKS_PER_SEC;
 
-	//stats[0] = (double) numArcScans;
-	//stats[1] = (double) numMergers;
-	//stats[2] = (double) numPushes;
-	//stats[3] = (double) numRelabels;
-	//stats[4] = (double) numGaps;
+//	recoverFlow( numNodes );
+//	flow = checkOptimality (numNodes);
 
-	stats[0] = numArcScans;
-	stats[1] = numMergers;
-	stats[2] = numPushes;
-	stats[3] = numRelabels;
-	stats[4] = numGaps;
-
-	gap = numNodes;
-//	recoverFlow(gap);
-//	flow = checkOptimality (gap);
-
-	displayCut (segs, cut, gap);
-//	*cut = flow;
+	printOutput( argv[2], times);
 
 	freeMemory ();
 
