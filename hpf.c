@@ -1706,7 +1706,7 @@ contractProblem - create contracted instance based on lower bound and upper boun
 		printf("Out of memory\n");
 		exit(0);
 	}
-	if ((problem->sinkSet = (Node *)malloc(problem->numSourceSet * sizeof(Node))) == NULL)
+	if ((problem->sinkSet = (Node *)malloc(problem->numSinkSet * sizeof(Node))) == NULL)
 	{
 		printf("Out of memory\n");
 		exit(0);
