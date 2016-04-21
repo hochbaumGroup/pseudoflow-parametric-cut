@@ -150,7 +150,7 @@ typedef struct Breakpoint
 Global variables
 *************************************************************************/
 // tolerance for denominator == 0
-static double TOL = 1E-12;
+static double TOL = 1E-8;
 
 static uint numNodes = 0;
 static uint numArcs = 0;
@@ -2229,12 +2229,12 @@ parametricCut - Recursive function that solves the parametric cut problem
 		destroyProblem(&lowerBoundIntersect);
 		destroyProblem(&upperBoundIntersect);
 	}
-	else if (lambdaIntersectExists == 1 && lambdaIntersect == highProblem->lambdaValue)
+	else if (lambdaIntersectExists == 1 && dabs( lambdaIntersect - highProblem->lambdaValue ) <= TOL )
 	{
 		/* if lambda intersect is equal to upper bound, then lambdaHigh is a breakpoint and no further recursion necessary. */
 		addBreakpoint(lambdaIntersect, lowProblem->optimalSourceSetIndicator);
 	}
-	else if (lambdaIntersectExists == 1 && lambdaIntersect == lowProblem->lambdaValue)
+	else if (lambdaIntersectExists == 1 && dabs( lambdaIntersect - lowProblem->lambdaValue ) <= TOL )
 	{
 		/* if lambda intersect is equal to lower bound, then lambdaLow is a breakpoint and no further recursion necessary.*/
 		addBreakpoint(lambdaIntersect, lowProblem->optimalSourceSetIndicator);
