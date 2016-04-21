@@ -65,7 +65,7 @@ fprintf( f, '%s%s%s', problem, sourceSink, arcs );
 fclose( f );
 
 % call HPF solver
-if system( 'hpf inputHPF.txt outputHPF.txt' ) == 0
+if system( 'subroutines\hpf\hpf.exe inputHPF.txt outputHPF.txt' ) == 0
     error('Solver crashed');
 end
 
