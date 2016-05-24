@@ -1539,7 +1539,7 @@ evaluateCapacities - Evaluate capacities for a particular value of capacities
 		problem->arcList[i].capacity = problem->arcList[i].constant + problem->arcList[i].multiplier * problem->lambdaValue;
 		if (problem->arcList[i].capacity < 0)
 		{
-			if (roundNegativeCapacity == 1)
+			if (roundNegativeCapacity == 1 ||  problem->arcList[i].capacity > - TOL)
 				problem->arcList[i].capacity = 0;
 			else
 			{
