@@ -94,7 +94,7 @@
 
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
-#include <crtdbg.h> // debug for memory leaks
+//#include <crtdbg.h> // debug for memory leaks
 #include "stdio.h"
 //#include <sys/time.h>
 //#include <sys/resource.h>
@@ -2347,7 +2347,7 @@ main - Main function
 
 	freeMemoryComplete ();
 
-	_CrtDumpMemoryLeaks();
+	//	_CrtDumpMemoryLeaks();
 
 	return 1;
 
