@@ -93,8 +93,6 @@
  *************************************************************************/
 
 #define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-//#include <crtdbg.h> // debug for memory leaks
 #include "stdio.h"
 //#include <sys/time.h>
 //#include <sys/resource.h>
@@ -186,7 +184,6 @@ Global variables
 *************************************************************************/
 // tolerance for denominator == 0
 static double TOL = 1E-8;
-
 static uint numNodes = 0;
 static uint numArcs = 0;
 static uint numNodesSuper = 0;
@@ -272,11 +269,11 @@ initializeArc
 *************************************************************************/
 	ac->from = NULL;
 	ac->to = NULL;
-	ac->capacity = 0;
-	ac->flow = 0;
+	ac->capacity = 0.0;
+	ac->flow = 0.0;
 	ac->direction = 1;
-	ac->constant = 0;
-	ac->multiplier = 0;
+	ac->constant = 0.0;
+	ac->multiplier = 0.0;
 }
 
 static void liftAll (Node *rootNode)
@@ -446,6 +443,31 @@ pushDownward
 	breakRelationship (parent, child);
 
 	addToStrongBucket (child, &strongRoots[child->label]);
+}
+
+static void printCutProblem(CutProblem *p){
+  printf("numNodes: %u\n " ,p->numNodesInList);
+  printf("numSource %u\n" ,p->numSourceSet);
+  printf("numSink: %u\n" ,p->numSinkSet);
+  printf("numArcs: %u\n" ,p->numArcs);
+  printf("solved: %u\n" ,p->solved);
+  printf("lambda:%.12lf\n" ,p->lambdaValue);
+  int i;
+  for(i=0;i<numArcs;++i){
+    printf("[%d,%d](%.12lf,%.12lf,%.12lf)\n",p->arcList[i].from->originalIndex,p->arcList[i].to->originalIndex,p->arcList[i].capacity,p->arcList[i].constant,p->arcList[i].multiplier);
+  }
+  printf("\n");
+  //printArcListInfo(arcList);
+  //printNodeListInfo(nodeList);
+  printf("%.12lf " ,p->cutValue);
+  printf("%.12lf " ,p->cutMultiplier);
+  printf("%.12lf " ,p->cutConstant);
+  //printNodeListInfo(sourceSet);
+  //printSinkListInfo(sinkSet);
+  for(i=0;i<numNodesSuper;++i){
+    printf("%u ",p->optimalSourceSetIndicator[i]);
+  }
+  printf("\n");
 }
 
 static void pushExcess (Node *strongRoot)
@@ -663,7 +685,7 @@ static void initializeNode (Node *nd, const uint n)
 initializeNode
 *************************************************************************/
 	nd->label = 0;
-	nd->excess = 0;
+	nd->excess = 0.0;
 	nd->parent = NULL;
 	nd->childList = NULL;
 	nd->nextScan = NULL;
@@ -1196,6 +1218,7 @@ readData
 	uint currentNode;
 	uint isSourceAssigned = 0;
 	uint isSinkAssigned = 0;
+	uint numRemovedArcs = 0;
 	char sourceSinkIndicator;
 	uint from;
 	uint to;
@@ -1334,6 +1357,11 @@ readData
 					printf("Incorrect number of arcs specified\n");
 					exit(0);
 				}
+				else if (to==source || from==sink)
+				{
+				  numRemovedArcs++;
+				  continue;
+				}
 
 				arcListSuper[arcCount].constant = constantCapacity;
 				arcListSuper[arcCount].multiplier = multiplierCapacity;
@@ -1360,6 +1388,27 @@ readData
 	// close file
 	fclose(f);
 
+	if (numRemovedArcs>0)
+	{
+	  Arc* arcListSuperAux;
+	  numArcsSuper-= numRemovedArcs;
+	  if ((arcListSuperAux = (Arc *)malloc(numArcsSuper * sizeof(Arc))) == NULL)
+	    {
+	      printf("Could not allocate memory.\n");
+	      exit(0);
+	    }
+	  for(i=0;i<numArcsSuper;++i){
+	    arcListSuperAux[i].from = arcListSuper[i].from;
+	    arcListSuperAux[i].to = arcListSuper[i].to;
+	    arcListSuperAux[i].flow = arcListSuper[i].flow;
+	    arcListSuperAux[i].capacity = arcListSuper[i].capacity;
+	    arcListSuperAux[i].constant = arcListSuper[i].constant;
+	    arcListSuperAux[i].direction = arcListSuper[i].direction;
+	    arcListSuperAux[i].multiplier = arcListSuper[i].multiplier;
+	  }
+	  free(arcListSuper);
+	  arcListSuper = arcListSuperAux;
+	}
 	/* check if correct number of arcs has been specified */
 	if (arcCount != numArcsSuper)
 	{
@@ -1824,7 +1873,7 @@ contractProblem - create contracted instance based on lower bound and upper boun
 	{
 		newIndexFrom = nodeMap[oldProblem->arcList[i].from->number];
 		newIndexTo = nodeMap[oldProblem->arcList[i].to->number];
-		if (newIndexFrom == newIndexTo)
+		if (newIndexFrom == newIndexTo || newIndexTo==0 || newIndexFrom==1)
 		{
 		}
 		else if (newIndexFrom == 0)
@@ -1865,7 +1914,7 @@ contractProblem - create contracted instance based on lower bound and upper boun
 	{
 		newIndexFrom = nodeMap[oldProblem->arcList[i].from->number];
 		newIndexTo = nodeMap[oldProblem->arcList[i].to->number];
-		if (newIndexFrom == newIndexTo)
+		if (newIndexFrom == newIndexTo || newIndexTo==0 || newIndexFrom==1)
 		{
 		}
 		else if (newIndexFrom == 0)
@@ -2044,9 +2093,9 @@ evaluateCut - Evaluates optimal cut parameters for a given problem
 		originalIndexTo = problem->arcList[i].to->originalIndex;
 		if ((originalIndexFrom == -1 || problem->optimalSourceSetIndicator[originalIndexFrom] == 1) && (originalIndexTo == -2 || problem->optimalSourceSetIndicator[originalIndexTo] == 0 ) )
 		{
-			problem->cutValue += problem->arcList[i].capacity;
-			problem->cutMultiplier += problem->arcList[i].multiplier;
-			problem->cutConstant += problem->arcList[i].constant;
+		  problem->cutValue += problem->arcList[i].capacity;
+		  problem->cutMultiplier += problem->arcList[i].multiplier;
+		  problem->cutConstant += problem->arcList[i].constant;
 		}
 	}
 }
@@ -2063,7 +2112,9 @@ solveProblem - solves a single instance of cut problem
 	nodesList = problem->nodeList;
 	numNodes = problem->numNodesInList;
 	numArcs = problem->numArcs;
-	
+	problem->cutMultiplier = 0.0;
+	problem->cutConstant = 0.0;
+	problem->cutValue = 0.0;
 	// handle empty problems
 	if (numNodes == 2)
 	{
@@ -2197,6 +2248,7 @@ solveProblem - solves a single instance of cut problem
 		free(arcList);
 		arcList = NULL;
 	}
+	//printCutProblem(problem);
 	freeMemorySolve();
 }
 
