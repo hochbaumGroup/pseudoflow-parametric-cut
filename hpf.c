@@ -1509,7 +1509,7 @@ printOutput
 	fprintf(f, "l ");
 	for (i = 0; i < numBreakpoints; i++)
 	{
-		fprintf(f, "%g", currentBreakpoint->lambdaValue);
+		fprintf(f, "%.12lf", currentBreakpoint->lambdaValue);
 		if (i < numBreakpoints - 1)
 		{
 			fprintf(f, " ");
@@ -1639,7 +1639,6 @@ initializeProblem - Setup problems for parametric cut
 
 	/* initialize new lambda value */
 	problem->lambdaValue = lambdaValue;
-
 	/* set size of node sets */
 	problem->numSourceSet = 1;
 	problem->numSinkSet = 1;
@@ -2319,12 +2318,12 @@ parametricCut - Recursive function that solves the parametric cut problem
 	else if (lambdaIntersectExists == 1 && dabs( lambdaIntersect - highProblem->lambdaValue ) <= TOL )
 	{
 		/* if lambda intersect is equal to upper bound, then lambdaHigh is a breakpoint and no further recursion necessary. */
-		addBreakpoint(lambdaIntersect, lowProblem->optimalSourceSetIndicator);
+		addBreakpoint(highProblem->lambdaValue, lowProblem->optimalSourceSetIndicator);
 	}
 	else if (lambdaIntersectExists == 1 && dabs( lambdaIntersect - lowProblem->lambdaValue ) <= TOL )
 	{
 		/* if lambda intersect is equal to lower bound, then lambdaLow is a breakpoint and no further recursion necessary.*/
-		addBreakpoint(lambdaIntersect, lowProblem->optimalSourceSetIndicator);
+		addBreakpoint(lowProblem->lambdaValue, lowProblem->optimalSourceSetIndicator);
 	}
 
 	/* add cut corresponding to lambdaHigh iff first recursion level */
