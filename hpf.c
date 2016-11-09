@@ -1461,7 +1461,15 @@ removeDuplicateBreakpoints
 			destroyBreakpoint(nextBreakpoint);
 		}
 		currentBreakpoint = currentBreakpoint->next;
-		nextBreakpoint = currentBreakpoint->next;
+		// it may be that current breakpoint is null if there is one set of duplicate breakpoints
+		if (currentBreakpoint != NULL)
+		{
+			nextBreakpoint = currentBreakpoint->next;
+		}
+		else
+		{
+			nextBreakpoint = NULL;
+		}
 	}
 }
 
