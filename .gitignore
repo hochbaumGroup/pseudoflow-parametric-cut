@@ -1,0 +1,4 @@
+*.pdf
+*.mexw64
+
+papers/*
