@@ -2135,7 +2135,7 @@ parametricCut - Recursive function that solves the parametric cut problem
 	}
 }
 
-void hpf(static int numNodesIn, static int numArcsIn, static double * arcMatrix, static double * lambdaRange, static int roundNegativeCapacityIn, int * numBreakpoints, int * cuts, double * breakpoints, int * stats, double * times )
+void hpf_solve(static int numNodesIn, static int numArcsIn, static double * arcMatrix, static double * lambdaRange, static int roundNegativeCapacityIn, int * numBreakpoints, int * cuts, double * breakpoints, int * stats, double * times )
 /*************************************************************************
 main - Main function
 *************************************************************************/
