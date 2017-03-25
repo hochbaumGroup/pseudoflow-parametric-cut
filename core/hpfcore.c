@@ -1245,6 +1245,12 @@ readData
 		int to = (int) arcMatrix[i * 4 + 1];
 		double constantCapacity = arcMatrix[ i * 4 + 2 ];
 		double multiplierCapacity = arcMatrix[ i * 4 + 3 ];
+
+		arcListSuper[i].constant = constantCapacity;
+		arcListSuper[i].multiplier = multiplierCapacity;
+		arcListSuper[i].from = &nodeListSuper[from];
+		arcListSuper[i].to = &nodeListSuper[to];
+
 		++nodeListSuper[from].numAdjacent;
 		++nodeListSuper[to].numAdjacent;
 	}
@@ -1291,7 +1297,7 @@ removeDuplicateBreakpoints
 	}
 }
 
-static void prepareOutput (int * numBreakpoints, int * cuts, double * breakpoints, int * stats )
+static void prepareOutput (int * numBreakpoints, int ** cuts, double ** breakpoints, int stats[5] )
 {
 /*************************************************************************
 printOutput
@@ -1307,7 +1313,7 @@ printOutput
 	stats[4] = numGaps;
 
 	/* count num breakpoints */
-	numBreakpoints = 0;
+	*numBreakpoints = 0;
 	currentBreakpoint = firstBreakpoint;
 	while (currentBreakpoint != NULL)
 	{
@@ -1315,8 +1321,9 @@ printOutput
 		currentBreakpoint = currentBreakpoint->next;
 	}
 
+	double* breakpointsPointer;
 	/* print lambda values */
-	if ((breakpoints = (double *)malloc(*numBreakpoints * sizeof(double))) == NULL)
+	if ((breakpointsPointer = (double *)malloc(*numBreakpoints * sizeof(double))) == NULL)
 	{
 		printf("Could not allocate memory.\n");
 		exit(0);
@@ -1325,12 +1332,15 @@ printOutput
 	currentBreakpoint = firstBreakpoint;
 	for (i = 0; i < *numBreakpoints; i++)
 	{
-		breakpoints[i] = currentBreakpoint->lambdaValue;
+		breakpointsPointer[i] = (double) currentBreakpoint->lambdaValue;
 		currentBreakpoint = currentBreakpoint->next;
 	}
 
+	*breakpoints = breakpointsPointer;
+
 	/* print values nodes*/
-	if ((cuts = (int *)malloc(*numBreakpoints * (int) numNodesSuper * sizeof(int))) == NULL)
+	int* cutsPointer;
+	if ((cutsPointer = (int *)malloc(*numBreakpoints * (int) numNodesSuper * sizeof(int))) == NULL)
 	{
 		printf("Could not allocate memory.\n");
 		exit(0);
@@ -1341,10 +1351,12 @@ printOutput
 	{
 		for (j = 0; j < numNodesSuper; j++)
 		{
-			cuts[i * *numBreakpoints + j ] = currentBreakpoint->sourceSetIndicator[j];
+			cutsPointer[i * numNodesSuper + j ] = (int) currentBreakpoint->sourceSetIndicator[j];
 		}
 		currentBreakpoint = currentBreakpoint->next;
 	}
+
+	*cuts = cutsPointer;
 }
 
 static void copyArcNew(CutProblem *problem, int *nodeMap, Arc *old, Arc *new)
@@ -2063,6 +2075,9 @@ parametricCut - Recursive function that solves the parametric cut problem
 
 	uint lambdaIntersectExists = 1;
 
+	// print low, high + breakpoints
+	printf("Lambda High: %.2f\nLambda Low: %.2f\n",highProblem->lambdaValue, lowProblem->lambdaValue);
+
 	/* determine if this is the outermost recursion level*/
 	int baseLevel = 0;
 	if (lowProblem->solved == 0 && highProblem->solved == 0)
@@ -2135,11 +2150,48 @@ parametricCut - Recursive function that solves the parametric cut problem
 	}
 }
 
-void hpf_solve(static int numNodesIn, static int numArcsIn, static double * arcMatrix, static double * lambdaRange, static int roundNegativeCapacityIn, int * numBreakpoints, int * cuts, double * breakpoints, int * stats, double * times )
+void reset_globals()
+{
+	TOL = 1E-8;
+	numNodes = 0;
+	numArcs = 0;
+	numNodesSuper = 0;
+	numArcsSuper = 0;
+	source = 0;
+	sink = 0;
+	highestStrongLabel = 1;
+
+	numArcScans = 0;
+	numPushes = 0;
+	numMergers = 0;
+	numRelabels = 0;
+	numGaps = 0;
+
+	nodesList = NULL;
+	strongRoots = NULL;
+	labelCount = NULL;
+	arcList = NULL;
+	nodeListSuper = NULL;
+	arcListSuper = NULL;
+	lowestPositiveExcessNode = 0;
+
+	lastBreakpoint = NULL;
+	firstBreakpoint = NULL;
+
+	useParametricCut = 1;
+	roundNegativeCapacity = 0;
+
+	LAMBDA_LOW = 0;
+	LAMBDA_HIGH = 0;
+}
+
+void hpf_solve(int numNodesIn, int numArcsIn, int sourceIn, int sinkIn, double * arcMatrix, double lambdaRange[2], int roundNegativeCapacityIn, int * numBreakpoints, int ** cuts, double ** breakpoints, int stats[5], double times[3] )
 /*************************************************************************
 main - Main function
 *************************************************************************/
 {
+	reset_globals();
+
 	/*ullint*/double flow = 0;
 	double readStart, readEnd, initStart, initEnd, solveStart, solveEnd;
 
@@ -2149,10 +2201,22 @@ main - Main function
 	numRelabels = 0;
 	numGaps = 0;
 
+	// printf("NumNodes: %d\n", numNodesIn);
+	// printf("NumArcs: %d\n", numArcsIn);
+	// printf("Lambda Range: [%lf, %lf]\n", lambdaRange[0], lambdaRange[1]);
+	// printf("Round if negative: %d\n", roundNegativeCapacity);
+	// printf("Arc matrix:\n");
+	// for (int i = 0; i < numArcsIn; ++i)
+	// {
+	// 	printf("Row %d: [%.2lf, %.2lf, %.2lf, %.2lf]\n", i, arcMatrix[i * 4 + 0 ], arcMatrix[i * 4 + 1 ], arcMatrix[i * 4 + 2 ], arcMatrix[i * 4 + 3 ]);
+	// }
+
 	readStart = clock();
 	// readInput
 	numNodesSuper = numNodesIn;
 	numArcsSuper = numArcsIn;
+	source = (uint) sourceIn;
+	sink = (uint) sinkIn;
 	LAMBDA_LOW = lambdaRange[0];
 	LAMBDA_HIGH = lambdaRange[1];
 	roundNegativeCapacity = roundNegativeCapacityIn;
@@ -2189,10 +2253,26 @@ main - Main function
 	times[2] = (solveEnd - solveStart)/CLOCKS_PER_SEC;
 
 	/* RECOVER FLOW NEEDS TO BE ADAPTED TO DEAL WITH PARAMETRIC ALGORITHM */
-//	recoverFlow( numNodes );
-//	flow = checkOptimality (numNodes);
+	//	recoverFlow( numNodes );
+	//	flow = checkOptimality (numNodes);
 
 	prepareOutput(numBreakpoints, cuts, breakpoints, stats);
 
+	// printf("Stats: [%d, %d, %d, %d, %d]\n", stats[0],stats[1],stats[2],stats[3],stats[4]);
+	// printf("times: [%lf, %lf, %lf]\n", times[0],times[1],times[2]);
+	// printf("Num breakpoints: %d\n", *numBreakpoints);
+	// printf("breakpoints:\n");
+	// for (int i = 0; i < *numBreakpoints; ++i)
+	// {
+	// 	printf("Breakpoint: %lf\n", (*breakpoints)[i]);
+	// 	for (int j = 0; j < (int)numNodesSuper; j++)
+	// 	{
+	// 		printf("Cut indicator: %d\n", (*cuts)[i * (int) numNodesSuper + j ]);
+	// 	}
+	// }
+
+
 	freeMemoryComplete ();
+
+
 }
