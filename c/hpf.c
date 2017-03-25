@@ -296,85 +296,64 @@ readData
 	*arcMatrixPointer = arcMatrix;
 }
 
-// static void printOutput (char *filename, double *times )
-// {
-// /*************************************************************************
-// printOutput
-// *************************************************************************/
-// 	uint stats[5];
-// 	Breakpoint *currentBreakpoint;
-// 	uint numBreakpoints = 0;
-// 	uint i;
-// 	uint j;
-//
-// 	stats[0] = numArcScans;
-// 	stats[1] = numMergers;
-// 	stats[2] = numPushes;
-// 	stats[3] = numRelabels;
-// 	stats[4] = numGaps;
-//
-// 	// open outputFile
-// 	FILE* f = fopen(filename,"w");
-// 	if (f == NULL)
-// 	{
-// 		printf("I/O error while opening output file %s", filename);
-// 		exit(0);
-// 	}
-//
-// 	/* print times */
-// 	fprintf(f, "t %.3lf %.3lf %.3lf\n", times[0], times[1], times[2]);
-// 	/* print stats */
-// 	fprintf(f, "s %d %d %d %d %d\n", stats[0], stats[1], stats[2], stats[3], stats[4]);
-//
-// 	/* count num breakpoints */
-// 	currentBreakpoint = firstBreakpoint;
-// 	while (currentBreakpoint != NULL)
-// 	{
-// 		++numBreakpoints;
-// 		currentBreakpoint = currentBreakpoint->next;
-// 	}
-// 	fprintf(f, "p %d\n", numBreakpoints);
-//
-// 	/* print lambda values */
-// 	currentBreakpoint = firstBreakpoint;
-// 	fprintf(f, "l ");
-// 	for (i = 0; i < numBreakpoints; i++)
-// 	{
-// 		fprintf(f, "%.12lf", currentBreakpoint->lambdaValue);
-// 		if (i < numBreakpoints - 1)
-// 		{
-// 			fprintf(f, " ");
-// 			currentBreakpoint = currentBreakpoint->next;
-// 		}
-// 		else
-// 		{
-// 			fprintf(f, "\n");
-// 		}
-// 	}
-//
-// 	/* print values nodes*/
-// 	for (i = 0; i < numNodesSuper; i++)
-// 	{
-// 		currentBreakpoint = firstBreakpoint;
-// 		fprintf(f, "n %d ",i);
-// 		for (j = 0; j < numBreakpoints; j++)
-// 		{
-// 			fprintf(f, "%d", currentBreakpoint->sourceSetIndicator[i]);
-// 			if (j < numBreakpoints - 1)
-// 			{
-// 				fprintf(f, " ");
-// 				currentBreakpoint = currentBreakpoint->next;
-// 			}
-// 			else
-// 			{
-// 				fprintf(f, "\n");
-// 			}
-// 		}
-// 	}
-//
-// 	// close output file
-// 	fclose(f);
-// }
+static void writeOutput (char *filename, int numBreakpoints, int numNodes, double* breakpoints, int* cuts, int* stats, double* times)
+{
+/*************************************************************************
+writeOutput
+*************************************************************************/
+	int i, j;
+
+	// open outputFile
+	FILE* f = fopen(filename,"w");
+	if (f == NULL)
+	{
+		printf("I/O error while opening output file %s", filename);
+		exit(0);
+	}
+
+	/* print times */
+	fprintf(f, "t %.3lf %.3lf %.3lf\n", times[0], times[1], times[2]);
+	/* print stats */
+	fprintf(f, "s %d %d %d %d %d\n", stats[0], stats[1], stats[2], stats[3], stats[4]);
+
+	fprintf(f, "p %d\n", numBreakpoints);
+
+	/* print lambda values */
+	fprintf(f, "l ");
+	for (i = 0; i < numBreakpoints; i++)
+	{
+		fprintf(f, "%.12lf", breakpoints[i]);
+		if (i < numBreakpoints - 1)
+		{
+			fprintf(f, " ");
+		}
+		else
+		{
+			fprintf(f, "\n");
+		}
+	}
+
+	/* print values nodes*/
+	for (i = 0; i < numNodes; i++)
+	{
+		fprintf(f, "n %d ",i);
+		for (j = 0; j < numBreakpoints; j++)
+		{
+			fprintf(f, "%d", cuts[i + j * numNodes]);
+			if (j < numBreakpoints - 1)
+			{
+				fprintf(f, " ");
+			}
+			else
+			{
+				fprintf(f, "\n");
+			}
+		}
+	}
+
+	// close output file
+	fclose(f);
+}
 
 
 int main(int argc, char **argv)
@@ -433,7 +412,7 @@ main - Main function
 		}
 	}
 
-	// writeOutput();
+	writeOutput(argv[2], numBreakpoints, numNodes, breakpoints, cuts, stats, times);
 
 	return 1;
 }
