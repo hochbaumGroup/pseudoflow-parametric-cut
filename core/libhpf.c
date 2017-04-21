@@ -2081,7 +2081,7 @@ parametricCut - Recursive function that solves the parametric cut problem
 	uint lambdaIntersectExists = 1;
 
 	// print low, high + breakpoints
-	printf("Lambda High: %.2f\nLambda Low: %.2f\n",highProblem->lambdaValue, lowProblem->lambdaValue);
+	// printf("Lambda High: %.2f\nLambda Low: %.2f\n",highProblem->lambdaValue, lowProblem->lambdaValue);
 
 	/* determine if this is the outermost recursion level*/
 	int baseLevel = 0;
