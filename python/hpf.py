@@ -80,7 +80,8 @@ def _solve(c_input, c_output):
 
 
 def _cleanup(c_output):
-    pass
+    libhpf.libfree(c_output['breakpoints'])
+    libhpf.libfree(c_output['cuts'])
 
 
 def _read_output(c_output, nodeNames):
@@ -110,14 +111,16 @@ def _read_output(c_output, nodeNames):
 def hpf(G, source, sink, const_cap, mult_cap=None, lambdaRange=None,
         roundNegativeCapacity=False):
 
-    nodeNames, nodeDict, arcMat = _get_arcmatrix(G, const_cap, mult_cap)
+    nodeNames, nodeDict, arcMatrix = _get_arcmatrix(G, const_cap, mult_cap)
 
     c_input = _create_c_input(G, nodeDict, source, sink, arcMatrix,
                               lambdaRange, roundNegativeCapacity)
     c_output = _create_c_output()
 
-    _solve(libhpf, c_input, c_output)
+    _solve(c_input, c_output)
 
     breakpoints, cuts, info = _read_output(c_output, nodeNames)
 
-    
+    _cleanup(c_output)
+
+    return breakpoints, cuts, info
