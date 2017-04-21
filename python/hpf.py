@@ -117,3 +117,7 @@ def hpf(G, source, sink, const_cap, mult_cap=None, lambdaRange=None,
     c_output = _create_c_output()
 
     _solve(libhpf, c_input, c_output)
+
+    breakpoints, cuts, info = _read_output(c_output, nodeNames)
+
+    
