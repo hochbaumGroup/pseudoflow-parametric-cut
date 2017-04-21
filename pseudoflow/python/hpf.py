@@ -1,5 +1,4 @@
 from ctypes import c_int, c_double, cast, byref, POINTER, cdll
-import numpy as np
 from six.moves import xrange
 import os
 
