@@ -139,3 +139,34 @@ class TestPythonHpf(unittest.TestCase):
                          [1., 2.])
         self.assertEqual(get_vals_array(c_output['cuts'], 6),
                          [1, 0, 0, 1, 1, 0])
+
+    def test_read_output(self):
+        G = DiGraph()
+        G.add_edges_from([(0, 1), (1, 2)])
+
+        G[0][1]["const"] = 1
+        G[1][2]["const"] = 9.0
+
+        G[0][1]["mult"] = 5
+        G[1][2]["mult"] = -3
+
+        source = 0
+        sink = 2
+        roundNegativeCapacity = True
+        lambdaRange = [0., 2.]
+
+        nodeNames, nodeDict, linArcMat = hpf._get_arcmatrix(G, "const", "mult")
+
+        c_input = hpf._create_c_input(G, nodeDict, source, sink,
+                                      linArcMat, lambdaRange,
+                                      roundNegativeCapacity)
+        c_output = hpf._create_c_output()
+
+        hpf._solve(c_input, c_output)
+
+        breakpoints, cuts, info = hpf._read_output(c_output, nodeNames)
+
+        self.assertEqual(breakpoints, [1., 2.])
+        self.assertEqual(cuts, {0: [1, 1], 1: [0, 1], 2: [0,0]})
+
+        # TODO: Implement test for info! Results are currently incorrect.

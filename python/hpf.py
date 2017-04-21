@@ -83,8 +83,28 @@ def _cleanup(c_output):
     pass
 
 
-def _read_output():
-    pass
+def _read_output(c_output, nodeNames):
+    numBreakpoints = c_output['numBreakpoints'].value
+    breakpoints = [c_output['breakpoints'][i]
+                   for i in range(numBreakpoints)]
+
+    cuts = {}
+    for i, node in enumerate(nodeNames):
+        cuts[node] = [c_output['cuts'][len(nodeNames) * j + i]
+                      for j in range(numBreakpoints)]
+
+    info = {
+        'numArcScans': c_output['stats'][0],
+        'numMergers': c_output['stats'][1],
+        'numPushes': c_output['stats'][2],
+        'numRelabels': c_output['stats'][3],
+        'numGap': c_output['stats'][4],
+        'readDataTime': c_output['times'][0],
+        'intializationTime': c_output['times'][1],
+        'solveTime': c_output['times'][2],
+    }
+
+    return breakpoints, cuts, info
 
 
 def hpf(G, source, sink, const_cap, mult_cap=None, lambdaRange=None,
