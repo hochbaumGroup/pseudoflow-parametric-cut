@@ -222,6 +222,11 @@ double dabs(double value)
 	else return -value;
 }
 
+void libfree(void* p)
+{
+	free(p);
+}
+
 int isFlow(double flow)
 /*************************************************************************
 isFlow: We set a threshhold. If the flow value is below the threshhold, we
