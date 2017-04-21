@@ -1,21 +1,23 @@
-CC = cc
 OPT = -O2 -march=native
-CFLAGS = -Wall -std=gnu99 $(OPT)
+CFLAGS = -c -fpic -Wall -std=gnu99 $(OPT)
+LDFLAGS =
 
-targets = hpf
+SOURCES = hpf.c ../core/libhpf.c
+TARGET = hpf
+HEADERS = $(SOURCES:.c=.h)
+OBJECTS = $(SOURCES:.c=.o)
 
-.PHONY : default
-default : all
+.PHONY : all clean
+all: $(TARGET)
 
-.PHONY : all
-all : clean $(targets)
-
-hpf : hpf.c ../core/hpfcore.c
-	$(CC) -o $@ $^
-
-%.o : %.c
-	$(CC) -c $(CFLAGS) $<
-
-.PHONY : clean
 clean:
-	rm -f $(targets)
+	rm -f $(OBJECTS) $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJECTS)
+
+all: $(TARGET)
+	chmod +x $(TARGET)
+
+%.o: %.c
+	$(CC) $(CFLAGS) $< -o $@
