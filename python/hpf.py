@@ -112,8 +112,8 @@ def hpf(G, source, sink, const_cap, mult_cap=None, lambdaRange=None,
 
     nodeNames, nodeDict, arcMat = _get_arcmatrix(G, const_cap, mult_cap)
 
-    c_input = _create_c_input(G, nodeDict, source, sink, arcMatrix, lambdaRange,
-                              roundNegativeCapacity)
+    c_input = _create_c_input(G, nodeDict, source, sink, arcMatrix,
+                              lambdaRange, roundNegativeCapacity)
     c_output = _create_c_output()
 
     _solve(libhpf, c_input, c_output)
