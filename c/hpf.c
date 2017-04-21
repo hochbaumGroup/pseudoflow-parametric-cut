@@ -94,7 +94,7 @@
 
 #include "stdio.h"
 #include "stdlib.h"
-#include "../core/hpfcore.h"
+#include "../core/libhpf.h"
 
 static void readData(char *filename, int* numNodes, int* numArcs, int *source, int *sink, double ** arcMatrixPointer, double lambdaRange[2], int * roundNegativeCapacity)
 /*************************************************************************
