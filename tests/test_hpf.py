@@ -1,5 +1,5 @@
 import unittest
-import hpf
+from pseudoflow.python import hpf
 from ctypes import c_int
 from networkx import DiGraph
 
