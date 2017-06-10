@@ -2,8 +2,9 @@ from ctypes import c_int, c_double, cast, byref, POINTER, cdll
 from six.moves import xrange
 import os
 
+
 PATH = os.path.dirname(__file__)
-libhpf = cdll.LoadLibrary(os.path.join(PATH, os.pardir, "core/libhpf.so"))
+libhpf = cdll.LoadLibrary(os.path.join(PATH, os.pardir, 'libhpf.so'))
 
 
 def _c_arr(c_type, size, init):

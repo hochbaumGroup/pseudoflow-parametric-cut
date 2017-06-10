@@ -3,7 +3,7 @@ CFLAGS = -c -fpic -Wall -std=gnu99 $(OPT)
 LDFLAGS = -shared
 
 SOURCES = libhpf.c
-TARGET = libhpf.so
+TARGET = ../libhpf.so
 HEADERS = $(SOURCES:.c=.h)
 OBJECTS = $(SOURCES:.c=.o)
 
