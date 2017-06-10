@@ -35,7 +35,7 @@ class TestPythonHpf(unittest.TestCase):
                                                             mult_cap="mult")
         self.assertEqual(nodeNames, [0, 1, 2])
         self.assertEqual(nodeDict, {0: 0, 1: 1, 2: 2})
-        self.assertEqual(arcMatOut, linArcMat)
+        self.assertEqual(list(arcMatOut), linArcMat)
 
     def test_create_c_input(self):
         G = DiGraph()
