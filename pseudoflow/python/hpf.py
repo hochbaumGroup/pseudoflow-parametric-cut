@@ -26,7 +26,7 @@ def _get_arcmatrix(G, const_cap, mult_cap):
 
     for fromNode, toNode, data in G.edges_iter(data=True):
         linearArcMatrix += [nodeDict[fromNode], nodeDict[toNode],
-                            data[const_cap], data[mult_cap]]
+                            data[const_cap], data[mult_cap] if mult_cap else 0]
 
     return (nodeNames, nodeDict, map(lambda x: float(x), linearArcMatrix))
 
@@ -113,6 +113,12 @@ def _read_output(c_output, nodeNames):
 def hpf(G, source, sink, const_cap, mult_cap=None, lambdaRange=None,
         roundNegativeCapacity=False):
 
+    if mult_cap:
+        parametric = True
+    else:
+        parametric = False
+        lambdaRange = [0., 0.]
+
     nodeNames, nodeDict, arcMatrix = _get_arcmatrix(G, const_cap, mult_cap)
 
     c_input = _create_c_input(G, nodeDict, source, sink, arcMatrix,
@@ -124,5 +130,8 @@ def hpf(G, source, sink, const_cap, mult_cap=None, lambdaRange=None,
     breakpoints, cuts, info = _read_output(c_output, nodeNames)
 
     _cleanup(c_output)
+
+    if not parametric:
+        breakpoints = [None, ]
 
     return breakpoints, cuts, info

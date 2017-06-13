@@ -171,7 +171,7 @@ class TestPythonHpf(unittest.TestCase):
 
         # TODO: Implement test for info! Results are currently incorrect.
 
-    def test_hpf(self):
+    def test_hpf_parametric(self):
         G = DiGraph()
         G.add_edges_from([(0, 1), (1, 2)])
 
@@ -192,5 +192,20 @@ class TestPythonHpf(unittest.TestCase):
 
         self.assertEqual(breakpoints, [1., 2.])
         self.assertEqual(cuts, {0: [1, 1], 1: [0, 1], 2: [0, 0]})
+
+    def test_hpf_nonparametric(self):
+        G = DiGraph()
+        G.add_edges_from([(0, 1), (1, 2)])
+
+        G[0][1]["const"] = 1
+        G[1][2]["const"] = 9.0
+
+        source = 0
+        sink = 2
+        breakpoints, cuts, info = hpf.hpf(
+            G, source, sink, const_cap="const")
+
+        self.assertEqual(breakpoints, [None, ])
+        self.assertEqual(cuts, {0: [1, ], 1: [0, ], 2: [0, ]})
 
         # TODO: Implement test for info! Results are currently incorrect.
