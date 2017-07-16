@@ -52,7 +52,7 @@ extensions = [
         export_symbols=["hpf_solve", 'libfree'],
         # include_dirs=["pseudoflow/core"],
         language='c99',
-        extra_compile_args='-std=c99'
+        extra_compile_args=['-std=c99', '-O3']
     )
 ]
 
