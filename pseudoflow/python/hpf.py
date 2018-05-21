@@ -20,11 +20,11 @@ def _get_arcmatrix(G, const_cap, mult_cap):
     nodeDict = {}
     linearArcMatrix = []
 
-    for i, node in zip(xrange(nNodes), G.nodes_iter()):
+    for i, node in zip(xrange(nNodes), G.nodes()):
         nodeDict[node] = i
         nodeNames.append(node)
 
-    for fromNode, toNode, data in G.edges_iter(data=True):
+    for fromNode, toNode, data in G.edges(data=True):
         linearArcMatrix += [nodeDict[fromNode], nodeDict[toNode],
                             data[const_cap], data[mult_cap] if mult_cap else 0]
 
