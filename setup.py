@@ -1,5 +1,4 @@
 from setuptools import setup, Extension, find_packages
-import unittest
 
 
 # Fixing needed for building shared library under windows.
@@ -26,12 +25,6 @@ class build_ext_new(build_ext):
 
 class CTypes(Extension):
     pass
-
-
-def test_suite():
-    test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover('tests')
-    return test_suite
 
 
 def readme():
