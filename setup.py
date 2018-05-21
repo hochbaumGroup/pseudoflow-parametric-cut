@@ -1,4 +1,4 @@
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 import unittest
 
 
@@ -47,8 +47,8 @@ def license():
 extensions = [
     CTypes(
         "pseudoflow.libhpf",
-        ["pseudoflow/core/libhpf.c"],
-        depends=["pseudoflow/core/libhpf.h"],
+        ["src/pseudoflow/core/libhpf.c"],
+        depends=["src/pseudoflow/core/libhpf.h"],
         export_symbols=["hpf_solve", 'libfree'],
         # include_dirs=["pseudoflow/core"],
         language='c99',
@@ -71,9 +71,11 @@ setup(name='pseudoflow',
       author_email='qspaen@berkeley.edu',
       license=license(),
       long_description=readme(),
-      packages=['pseudoflow', 'pseudoflow/python'],
+      packages=find_packages('src'),
+      package_dir={'': 'src'},
       install_requires=['networkx', 'six'],
-      test_suite='setup.test_suite',
+      setup_requires=['pytest-runner', ],
+      tests_require=['pytest', 'mock'],
       ext_modules=extensions,
       cmdclass={'build_ext': build_ext_new},
       zip_safe=False)

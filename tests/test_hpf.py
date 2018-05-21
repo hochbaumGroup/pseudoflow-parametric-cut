@@ -18,11 +18,11 @@ def G():
 
 
 def test_hpf_nonparametric(G):
-    from pseudoflow.python import hpf
+    from pseudoflow import hpf
 
     source = 0
     sink = 2
-    breakpoints, cuts, info = hpf.hpf(
+    breakpoints, cuts, info = hpf(
         G, source, sink, const_cap="const")
 
     breakpoints == [None, ]
@@ -32,14 +32,14 @@ def test_hpf_nonparametric(G):
 
 
 def test_hpf_parametric(G):
-    from pseudoflow.python import hpf
+    from pseudoflow import hpf
 
     source = 0
     sink = 2
     roundNegativeCapacity = True
     lambdaRange = [0., 2.]
 
-    breakpoints, cuts, info = hpf.hpf(
+    breakpoints, cuts, info = hpf(
         G, source, sink, const_cap="const", mult_cap="mult",
         lambdaRange=lambdaRange, roundNegativeCapacity=False)
 
