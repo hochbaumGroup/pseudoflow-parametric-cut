@@ -65,7 +65,7 @@ setup(name='pseudoflow',
       ],
       description='Pseudoflow algorithm for computing ' +
       '(parametric) minimum cuts',
-      keywords=['minimum cut', 'network flow', 'parametric']
+      keywords=['minimum cut', 'network flow', 'parametric'],
       url='https://github.com/quic0/pseudoflow',
       author='Quico Spaen',
       author_email='qspaen@berkeley.edu',
