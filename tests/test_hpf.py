@@ -36,7 +36,6 @@ def test_hpf_parametric(G):
 
     source = 0
     sink = 2
-    roundNegativeCapacity = True
     lambdaRange = [0., 2.]
 
     breakpoints, cuts, info = hpf(
