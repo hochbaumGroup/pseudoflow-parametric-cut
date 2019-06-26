@@ -1,8 +1,0 @@
-networkx>=2.1
-
-pytest
-pytest-cov
-pytest-runner
-pylint
-pycodestyle
-pydocstyle
