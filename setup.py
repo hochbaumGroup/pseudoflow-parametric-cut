@@ -50,14 +50,8 @@ class CTypes(Extension):
     pass
 
 
-def readme():
-    with open("README.md") as f:
-        return f.read()
-
-
-def license():
-    with open("LICENSE.md") as f:
-        return f.read()
+with open("README.md") as f:
+    readme = f.read()
 
 
 extensions = [
@@ -75,7 +69,7 @@ extensions = [
 
 setup(
     name="pseudoflow",
-    version="2019.6.4",
+    version="2019.6.5",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3",
@@ -85,8 +79,9 @@ setup(
     url="https://github.com/quic0/pseudoflow",
     author="Quico Spaen",
     author_email="qspaen@berkeley.edu",
-    license=license(),
-    long_description=readme(),
+    long_description_content_type="text/markdown",
+    license="Non-commercial license. Not an open-source license.",
+    long_description=readme,
     packages=find_packages("src"),
     package_dir={"": "src"},
     install_requires=["six"],
