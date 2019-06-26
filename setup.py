@@ -89,7 +89,7 @@ setup(
     long_description=readme(),
     packages=find_packages("src"),
     package_dir={"": "src"},
-    install_requires=["ctypes", "networkx", "six"],
+    install_requires=["six"],
     ext_modules=extensions,
     cmdclass={"build_ext": build_ext_new},
     zip_safe=False,
