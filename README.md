@@ -20,6 +20,7 @@ Install the package with `pip`:
 #### Example
 ```python
 import networkx as nx
+import pseudoflow
 
 G = DiGraph()
 G.add_edge(0, 1, const=1, mult=5)
@@ -30,11 +31,11 @@ source = 0
 sink = 2
 lambda_range = [0., 2.]
 
-breakpoints, cuts, info = hpf(
+breakpoints, cuts, info = pseudoflow.hpf(
     G,  # Networkx directed graph.
     source,  # Node id of the source node.
     sink,  # Node id of the sink node.
-    const_cap="const",  # Egge attribute with the constant capacity.
+    const_cap="const",  # Edge attribute with the constant capacity.
     mult_cap="mult",  # Edge attribute with the lambda multiplier.
     lambdaRange=lambda_range,  # (lower, upper) bounds for the lambda parameter.
     roundNegativeCapacity=False  # True if negative arc capacities should be rounded to zero.
