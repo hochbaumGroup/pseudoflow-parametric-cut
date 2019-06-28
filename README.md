@@ -22,7 +22,7 @@ Install the package with `pip`:
 import networkx as nx
 import pseudoflow
 
-G = DiGraph()
+G = nx.DiGraph()
 G.add_edge(0, 1, const=1, mult=5)
 G.add_edge(1, 2, const=9, mult=-3)
 
