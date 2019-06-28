@@ -3,10 +3,9 @@ This package provides an implementation of pseudoflow  for parametric minimum cu
 
 The package provides interfaces for Python, C, and Matlab.
 
-
 The HPF algorithm for solving (parametric) minimum cut on a graph is described in:
 
->    D.S. Hochbaum, "The Pseudoflow algorithm: A new algorithm for the maximum flow problem", Operations Research, 58(4):992-1009,2008.
+>    DS Hochbaum (2008), The Pseudoflow algorithm: A new algorithm for the maximum flow problem. Operations Research, 58(4):992-1009.
 
 It has been shown that the minimum cut as a function of `lambda` changes at most `n` times, where `n` is the number of nodes in the graph. The solution for all lambda can thus be represented with up to `n` intervals of lambda values. In each lambda interval, the minimum cut remains the same.
 
