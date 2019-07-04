@@ -1,13 +1,15 @@
-# Hochbaum's Pseudoflow (HPF) Algorithm for Parametric Minimum Cut
-This package provides an implementation of pseudoflow  for parametric minimum cut on directed graphs. In the parametric minimum cut problem, the capacity of source-adjacent arcs is monotone non-decreasing in the parameter `lambda` whereas the capacity of sink-adjacent arcs is monotone non-increasing in `lambda`. This solver finds the optimal minimum cut for all `lambda` values in a given range when the capacities of source and sink adjacent arcs are linear in `lambda`: `capacity = constant + multiplier * lambda`.
+# Hochbaum's Pseudoflow (HPF) Algorithm for Fully Parametric Minimum Cut
+This package provides an fully parametric implementation of pseudoflow for minimum cut on directed graphs. In the parametric minimum cut problem, the capacity of source-adjacent arcs is monotone non-decreasing in the parameter `lambda` whereas the capacity of sink-adjacent arcs is monotone non-increasing in `lambda`. This solver requires that the capacities of source and sink adjacent arcs are linear in `lambda`: `capacity = constant + multiplier * lambda`.
+
+This fully parametric solver finds the optimal minimum cut for all `lambda` values in a given range. The solution for all lambda values is represented with `O(n)` intervals for the parameter lambda. In each interval, the optimal minimum cut remains the same.
+
+A simple parametric minimum cut solver that provides the optimal minimum cut for a given list of arc capacities is available [here](https://riot.ieor.berkeley.edu/Applications/Pseudoflow/parametric.html), and a non-parametric maximum flow version of pseudoflow is available [here](https://riot.ieor.berkeley.edu/Applications/Pseudoflow/maxflow.html).
 
 The package provides interfaces for Python, C, and Matlab.
 
 The HPF algorithm for solving (parametric) minimum cut on a graph is described in:
 
 >    DS Hochbaum (2008), The Pseudoflow algorithm: A new algorithm for the maximum flow problem. Operations Research, 58(4):992-1009.
-
-It has been shown that the minimum cut as a function of `lambda` changes at most `n` times, where `n` is the number of nodes in the graph. The solution for all lambda can thus be represented with up to `n` intervals of lambda values. In each lambda interval, the minimum cut remains the same.
 
 ## Instructions for Python
 
