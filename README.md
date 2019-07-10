@@ -9,7 +9,8 @@ The package provides interfaces for Python, C, and Matlab.
 
 This implementation uses a variant of the fully parametric HPF algorithm as described in:
 >    DS Hochbaum (2008), The Pseudoflow algorithm: A new algorithm for the maximum flow problem. Operations Research, 58(4):992-1009.
-This implementation does not use *free runs* nor does it warm start solutions with informatiom from previous runs (see pg.15). This implementation should therefore **not be used** for comparison with the fully parametric HPF algorithm.
+
+This implementation does not use *free runs* nor does it use warm starts with informatiom from previous runs (see pg.15). This implementation should therefore **not be used** for comparison with the fully parametric HPF algorithm.
 
 
 ## Instructions for Python
