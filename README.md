@@ -1,5 +1,5 @@
-# Hochbaum's Pseudoflow (HPF) Algorithm for Fully Parametric Minimum Cut
-This package provides an fully parametric implementation of pseudoflow for minimum cut on directed graphs. In the parametric minimum cut problem, the capacity of source-adjacent arcs is monotone non-decreasing in the parameter `lambda` whereas the capacity of sink-adjacent arcs is monotone non-increasing in `lambda`. This solver requires that the capacities of source and sink adjacent arcs are linear in `lambda`: `capacity = constant + multiplier * lambda`.
+# Hochbaum's Pseudoflow (HPF) Algorithm for (Linear) Fully Parametric Minimum Cut
+This package provides a parametric implementation of pseudoflow for minimum cut on directed graphs. In the parametric minimum cut problem, the capacity of source-adjacent arcs is monotone non-decreasing in the parameter `lambda` whereas the capacity of sink-adjacent arcs is monotone non-increasing in `lambda`. This solver requires that the capacities of source and sink adjacent arcs are linear in `lambda`: `capacity = constant + multiplier * lambda`.
 
 This fully parametric solver finds the optimal minimum cut for all `lambda` values in a given range. The solution for all lambda values is represented with `O(n)` intervals for the parameter lambda. In each interval, the optimal minimum cut remains the same.
 
@@ -7,9 +7,10 @@ A simple parametric minimum cut solver that provides the optimal minimum cut for
 
 The package provides interfaces for Python, C, and Matlab.
 
-The HPF algorithm for solving (parametric) minimum cut on a graph is described in:
-
+This implementation uses a variant of the fully parametric HPF algorithm as described in:
 >    DS Hochbaum (2008), The Pseudoflow algorithm: A new algorithm for the maximum flow problem. Operations Research, 58(4):992-1009.
+This implementation does not use *free runs* nor does it warm start solutions with informatiom from previous runs (see pg.15). This implementation should therefore **not be used** for comparison with the fully parametric HPF algorithm.
+
 
 ## Instructions for Python
 
