@@ -1292,8 +1292,10 @@ removeDuplicateBreakpoints
 	Breakpoint *currentBreakpoint = firstBreakpoint;
 	Breakpoint *nextBreakpoint = currentBreakpoint->next;
 
+    // printf("breakpoint: %f\n", currentBreakpoint->lambdaValue);
 	while (nextBreakpoint != NULL)
 	{
+        // printf("breakpoint: %f\n", nextBreakpoint->lambdaValue);
 		if (currentBreakpoint->lambdaValue == nextBreakpoint->lambdaValue)
 		{
 			currentBreakpoint->next = nextBreakpoint->next;
