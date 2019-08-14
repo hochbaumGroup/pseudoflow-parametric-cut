@@ -2134,7 +2134,7 @@ static double computeIntersect(uint *difference, double K12)
         }
     }
 
-    printf("Constant: %lf, Mult: %lf\n", constant, multiplier);
+    // printf("Constant: %lf, Mult: %lf\n", constant, multiplier);
     return constant / (- multiplier);
 }
 
