@@ -197,7 +197,9 @@ static uint numArcs = 0;
 static uint numNodesSuper = 0;
 static uint numArcsSuper = 0;
 static uint source;
+static uint sourceSuper;
 static uint sink;
+static uint sinkSuper;
 static uint highestStrongLabel = 1;
 
 static uint numArcScans = 0;
@@ -1498,7 +1500,7 @@ initializeProblem - Setup problems for parametric cut
 	/* create new node sets*/
 	for (i = 0; i < numNodesProblem; i++)
 	{
-		if (i == source)
+		if (i == sourceSuper)
 		{
 			initializeNode( &problem->sourceSet[0], 0);
 			problem->sourceSet[0].originalIndex = nodeListProblem[i].originalIndex;
@@ -1506,7 +1508,7 @@ initializeProblem - Setup problems for parametric cut
 			problem->nodeList[0].originalIndex = -1; /* indicate artificial source node */
 			nodeMap[i] = 0;
 		}
-		else if (i == sink)
+		else if (i == sinkSuper)
 		{
 			initializeNode(&problem->sinkSet[0], 0);
 			problem->sinkSet[0].originalIndex = nodeListProblem[i].originalIndex;
@@ -2230,8 +2232,8 @@ main - Main function
 	// readInput
 	numNodesSuper = numNodesIn;
 	numArcsSuper = numArcsIn;
-	source = (uint) sourceIn;
-	sink = (uint) sinkIn;
+	sourceSuper = (uint) sourceIn;
+	sinkSuper = (uint) sinkIn;
 	LAMBDA_LOW = lambdaRange[0];
 	LAMBDA_HIGH = lambdaRange[1];
 	roundNegativeCapacity = roundNegativeCapacityIn;
