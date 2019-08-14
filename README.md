@@ -12,6 +12,8 @@ This implementation uses a variant of the fully parametric HPF algorithm as desc
 
 This implementation does not use *free runs* nor does it use warm starts with informatiom from previous runs (see pg.15). This implementation should therefore **not be used** for comparison with the fully parametric HPF algorithm.
 
+The package provides an option to round capacities that are negative for certain lambda values to zero. This option should **only** be used when each node has a source adjacent arc with capacity `max(0, a * lambda + b)` and a corresponding sink adjacent arc with capacity `max(0, -a * lambda - b)`. Otherwise, the intersection of the cut capacities is wrongly identified.
+
 
 ## Instructions for Python
 
