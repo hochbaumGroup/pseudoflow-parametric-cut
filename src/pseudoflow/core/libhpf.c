@@ -2134,14 +2134,16 @@ parametricCut - Recursive function that solves the parametric cut problem
 
 		/* Create new instance of upper bound problem with contracted optimal source set from the low problem and the sink set from the optimal cut for the high problem and lambda value equal to lambda intersect. The nodes in the source set for lambdaLow are guaranteed to be in the source set for the lambda >= lambdaLow. The nodes that are in the sinkset for lambdaHigh are guaranteed to be in the sink set for lambda <= lambdaIntersect <= lambdaHigh. */
 		CutProblem upperBoundIntersect;
-		contractProblem(&upperBoundIntersect, lowProblem, lambdaIntersect, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+    	initializeProblem(&upperBoundIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect); // replaces contract
+		// contractProblem(&upperBoundIntersect, lowProblem, lambdaIntersect, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
 
 		/* recurse for lower subinterval */
 		parametricCut(lowProblem, &upperBoundIntersect);
 
 		/* Create new instance of upper bound problem with contracted optimal source set from the low problem and the sink set from the optimal cut for the high problem and lambda value equal to lambda intersect. The nodes in the source set for lambdaLow are guaranteed to be in the source set for the lambda >= lambdaLow. The nodes that are in the sinkset for lambdaHigh are guaranteed to be in the sink set for lambda <= lambdaIntersect <= lambdaHigh. */
 		CutProblem lowerBoundIntersect;
-		contractProblem(&lowerBoundIntersect, lowProblem, lambdaIntersect,lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+        initializeProblem(&lowerBoundIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect); // replaces contract
+		// contractProblem(&lowerBoundIntersect, lowProblem, lambdaIntersect,lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
 
 		/* recurse for higher subinterval */
 		parametricCut(&lowerBoundIntersect, highProblem);
