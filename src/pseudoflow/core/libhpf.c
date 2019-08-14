@@ -2083,6 +2083,61 @@ solveProblem - solves a single instance of cut problem
 	freeMemorySolve();
 }
 
+static void differenceSourceSets(uint **ppdifference, uint *lowOptimalSourceIndicator, uint *highOptimalSourceIndicator)
+{
+    if ((*ppdifference = (uint *)malloc(numNodesSuper * sizeof(uint))) == NULL)
+	{
+		printf("Out of memory\n");
+		exit(0);
+	}
+    uint *pdifference = *ppdifference;
+    for (int i = 0; i < numNodesSuper; i++)
+    {
+        pdifference[i] = highOptimalSourceIndicator[i] - lowOptimalSourceIndicator[i];
+    }
+}
+
+static double internalCutCapacity(uint *optimalSourceSetIndicator) {
+    int from, to;
+    double arc_capacity;
+    double capacity = 0;
+
+    for (int i=0; i < numArcsSuper; i++)
+    {
+        from = arcListSuper[i].from->originalIndex;
+        to = arcListSuper[i].to->originalIndex;
+        arc_capacity = arcListSuper[i].constant;
+        if (optimalSourceSetIndicator[from] == 1 && optimalSourceSetIndicator[to] == 0 && from != sourceSuper && to != sinkSuper) {
+            capacity += arc_capacity;
+        }
+    }
+    return capacity;
+}
+
+static double computeIntersect(uint *difference, double K12)
+{
+    double constant = K12;
+    double multiplier = 0;
+
+    for (int i = 0; i < numArcsSuper; i++)
+    {
+
+        if (arcListSuper[i].from->originalIndex == sourceSuper && difference[arcListSuper[i].to->originalIndex] == 1)
+        {
+            constant += arcListSuper[i].constant;
+            multiplier += arcListSuper[i].multiplier;
+        }
+        else if (arcListSuper[i].to->originalIndex == sinkSuper && difference[arcListSuper[i].from->originalIndex] == 1 && roundNegativeCapacity == 0)
+        {
+            constant -= arcListSuper[i].constant;
+            multiplier -= arcListSuper[i].multiplier;
+        }
+    }
+
+    printf("Constant: %lf, Mult: %lf\n", constant, multiplier);
+    return constant / (- multiplier);
+}
+
 static void parametricCut(CutProblem *lowProblem, CutProblem *highProblem)
 /*************************************************************************
 parametricCut - Recursive function that solves the parametric cut problem
@@ -2119,10 +2174,21 @@ parametricCut - Recursive function that solves the parametric cut problem
 	/* find lambda value for which the optimal cut functions(expressed as a function of lambda) for the lower bound and upper bound problem intersect. */
 	if (dabs(highProblem->cutMultiplier - lowProblem->cutMultiplier) > TOL)
 	{
-		lambdaIntersect = (lowProblem->cutConstant - highProblem->cutConstant) / (highProblem->cutMultiplier - lowProblem->cutMultiplier);
+        // Compute S_high - S_low
+        uint *pdifference;
+        differenceSourceSets(&pdifference, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+
+        double Klow = internalCutCapacity(lowProblem->optimalSourceSetIndicator);
+        double Khigh = internalCutCapacity(highProblem->optimalSourceSetIndicator);
+        double K12 = Klow - Khigh;
+
+        lambdaIntersect = computeIntersect(pdifference, K12);
+
 		lambdaIntersectExists = 1;
 
         // printf("Intersect: %lf\n", lambdaIntersect);
+
+        free(pdifference);
 	}
 	else // conclude that there is no intersection if denominator is too close to zero
 	{
