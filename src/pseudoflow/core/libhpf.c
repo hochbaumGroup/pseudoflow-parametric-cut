@@ -721,21 +721,20 @@ static void destroyBreakpoint(Breakpoint *currentBreakpoint)
 destroyBreakpoint - Removes breakpoint and subsequent ones
 *************************************************************************/
 {
-	if (currentBreakpoint == NULL)
+	if (currentBreakpoint != NULL)
 	{
-		return;
+        /* free sourceset indicator */
+    	free(currentBreakpoint->sourceSetIndicator);
+    	currentBreakpoint->sourceSetIndicator = NULL;
+
+    	/* iterate through breakpoint list */
+    	destroyBreakpoint(currentBreakpoint->next);
+    	currentBreakpoint->next = NULL;
+
+    	/* free breakpoint */
+    	free(currentBreakpoint);
+    	currentBreakpoint = NULL;
 	}
-	/* free sourceset indicator */
-	free(currentBreakpoint->sourceSetIndicator);
-	currentBreakpoint->sourceSetIndicator = NULL;
-
-	/* iterate through breakpoint list */
-	destroyBreakpoint(currentBreakpoint->next);
-	currentBreakpoint->next = NULL;
-
-	/* free breakpoint */
-	free(currentBreakpoint);
-	currentBreakpoint == NULL;
 
 }
 
