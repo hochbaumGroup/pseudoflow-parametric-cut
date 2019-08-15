@@ -326,6 +326,16 @@ addOutOfTreeNode
 	++ n->numOutOfTree;
 }
 
+static uint sum_array_uint(uint *array, uint num_elements)
+{
+    uint sum = 0;
+    for (uint i = 0; i< num_elements; i++)
+    {
+        sum += array[i];
+    }
+    return sum;
+}
+
 static void addToStrongBucket (Node *newRoot, Root *rootBucket)
 {
 /*************************************************************************
@@ -2133,15 +2143,10 @@ static void parametricCut(CutProblem *lowProblem, CutProblem *highProblem)
 parametricCut - Recursive function that solves the parametric cut problem
 *************************************************************************/
 {
-
-	double lambdaIntersect = 0;
-
-	uint lambdaIntersectExists = 1;
-
 	// print low, high + breakpoints
 	printf("Lambda High: %.4f\nLambda Low: %.4f\n",highProblem->lambdaValue, lowProblem->lambdaValue);
 
-	/* determine if this is the outermost recursion level*/
+	/* determine if this is the outermost recursion level (to add upper )*/
 	int baseLevel = 0;
 	if (lowProblem->solved == 0 && highProblem->solved == 0)
 		baseLevel = 1;
@@ -2161,8 +2166,13 @@ parametricCut - Recursive function that solves the parametric cut problem
 		highProblem->solved = 1;
 	}
 
+    uint *pdifference_low_high;
+    differenceSourceSets(&pdifference_low_high, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+    uint num_nodes_different_low_high = sum_array_uint(pdifference_low_high, numNodesSuper);
+    free(pdifference_low_high);
+
 	/* find lambda value for which the optimal cut functions(expressed as a function of lambda) for the lower bound and upper bound problem intersect. */
-	if (dabs(highProblem->cutMultiplier - lowProblem->cutMultiplier) > TOL)
+	if (num_nodes_different_low_high > 0)
 	{
         // Compute S_high - S_low
         uint *pdifference;
@@ -2171,63 +2181,66 @@ parametricCut - Recursive function that solves the parametric cut problem
         double Klow = internalCutCapacity(lowProblem->optimalSourceSetIndicator);
         double Khigh = internalCutCapacity(highProblem->optimalSourceSetIndicator);
         double K12 = Klow - Khigh;
-        printf("K low: %lf, high; %lf, diff: %lf\n", Klow, Khigh, K12);
+        // printf("K low: %lf, high; %lf, diff: %lf\n", Klow, Khigh, K12);
 
-        lambdaIntersect = computeIntersect(pdifference, K12);
+        double lambdaIntersect = computeIntersect(pdifference, K12);
 
-		lambdaIntersectExists = 1;
+        // printf("Intersect: %lf\n", lambdaIntersect);
 
-        free(pdifference);
-
-        printf("Intersect: %lf\n", lambdaIntersect);
-	}
-	else // conclude that there is no intersection if denominator is too close to zero
-	{
-		lambdaIntersectExists = 0;
-	}
-
-	/* check cases depending on intersection value of the lower bound and upper bound optimal cut. */
-	if (lambdaIntersectExists == 1 && lambdaIntersect + TOL < highProblem->lambdaValue && lambdaIntersect - TOL > lowProblem->lambdaValue)
-	{
-		/* if intersection occurs strictly within the interval, then there are at least 2 breakpoints.lambdaIntersect is guaranteed to separate the interval into subintervals each containing at least 1 breakpoint. */
+        CutProblem minimalIntersect;
+    	initializeProblem(&minimalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect - TOL); // replaces contract
+        solveProblem(&minimalIntersect, 0);
+        minimalIntersect.solved = 1;
 
 		/* Create new instance of upper bound problem with contracted optimal source set from the low problem and the sink set from the optimal cut for the high problem and lambda value equal to lambda intersect. The nodes in the source set for lambdaLow are guaranteed to be in the source set for the lambda >= lambdaLow. The nodes that are in the sinkset for lambdaHigh are guaranteed to be in the sink set for lambda <= lambdaIntersect <= lambdaHigh. */
-		CutProblem upperBoundIntersect;
-    	initializeProblem(&upperBoundIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect); // replaces contract
-		// contractProblem(&upperBoundIntersect, lowProblem, lambdaIntersect, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+		CutProblem maximalIntersect;
+        initializeProblem(&maximalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect + TOL); // replaces contract
+        solveProblem(&maximalIntersect, 1);
+        maximalIntersect.solved = 1;
 
-		/* recurse for lower subinterval */
-		parametricCut(lowProblem, &upperBoundIntersect);
+        // check if lambdaIntersect is a breakpoint by comparing min and max source set.
+        uint *pdifference_min_max_intersect;
+        differenceSourceSets(&pdifference_min_max_intersect, minimalIntersect.optimalSourceSetIndicator, maximalIntersect.optimalSourceSetIndicator);
+        uint num_nodes_different_min_max = sum_array_uint(pdifference_min_max_intersect, numNodesSuper);
+        free(pdifference_min_max_intersect);
 
-		/* Create new instance of upper bound problem with contracted optimal source set from the low problem and the sink set from the optimal cut for the high problem and lambda value equal to lambda intersect. The nodes in the source set for lambdaLow are guaranteed to be in the source set for the lambda >= lambdaLow. The nodes that are in the sinkset for lambdaHigh are guaranteed to be in the sink set for lambda <= lambdaIntersect <= lambdaHigh. */
-		CutProblem lowerBoundIntersect;
-        initializeProblem(&lowerBoundIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect); // replaces contract
-		// contractProblem(&lowerBoundIntersect, lowProblem, lambdaIntersect,lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+        if (num_nodes_different_min_max > 0 )
+        {
+            // Intersection is a breakpoint
+            addBreakpoint(lambdaIntersect, minimalIntersect.optimalSourceSetIndicator);
+        }
+        else
+        {
+            // Intersection is not a breakpoint and must thus separate two breakpoints. Recurse.
+            // printf("Recursion\n");
 
-		/* recurse for higher subinterval */
-		parametricCut(&lowerBoundIntersect, highProblem);
+            /* recurse for lower subinterval */
+    		parametricCut(lowProblem, &minimalIntersect);
 
-		/* call destructor function */
-		destroyProblem(&lowerBoundIntersect);
-		destroyProblem(&upperBoundIntersect);
+    		/* recurse for higher subinterval */
+    		parametricCut(&maximalIntersect, highProblem);
+
+        }
+
+        /* call destructor function */
+        destroyProblem(&minimalIntersect);
+        destroyProblem(&maximalIntersect);
+
 	}
-	else if (lambdaIntersectExists == 1 && dabs( lambdaIntersect - highProblem->lambdaValue ) <= TOL )
-	{
-		/* if lambda intersect is equal to upper bound, then lambdaHigh is a breakpoint and no further recursion necessary. */
-		addBreakpoint(highProblem->lambdaValue, lowProblem->optimalSourceSetIndicator);
-	}
-	else if (lambdaIntersectExists == 1 && dabs( lambdaIntersect - lowProblem->lambdaValue ) <= TOL )
-	{
-		/* if lambda intersect is equal to lower bound, then lambdaLow is a breakpoint and no further recursion necessary.*/
-		addBreakpoint(lowProblem->lambdaValue, lowProblem->optimalSourceSetIndicator);
-	}
+    else
+    {
+        // printf("Stop recursion: Same cuts!\n");
+    }
 
-	/* add cut corresponding to lambdaHigh iff first recursion level */
+    /* add cut corresponding to lambdaHigh iff first recursion level */
 	if (baseLevel == 1)
 	{
 		addBreakpoint(highProblem->lambdaValue, highProblem->optimalSourceSetIndicator);
 	}
+
+
 }
+
 
 void reset_globals()
 {
