@@ -954,272 +954,272 @@ minisort
 }
 
 
-static /*ullint*/double checkOptimality (const uint gap)
-{
-/*************************************************************************
-checkOptimality
-*************************************************************************/
-	uint i, check = 1;
-	/*ullint*/double mincut = 0;
-	/*llint*/ double *excess = NULL;
-
-	Arc *tempArc;
-
-	excess = (/*llint*/double *) malloc (numNodes * sizeof (double/*llint*/));
-	if (!excess)
-	{
-		printf("Out of memory\n");
-		exit(0);
-	}
-
-	// Pushing depicits from all sink adjacent nodes to the sink
-	for (i=0; i<nodesList[sink].numOutOfTree; ++i)
-	{
-		tempArc = nodesList[sink].outOfTree[i];
-		if (isExcess(tempArc->from->excess) < 0)
-		{
-			if (isExcess((tempArc->from->excess + /*(int)*/ tempArc->flow))  < 0)
-			{
-				// Excess is high enough to saturate the arc => Flow on residual arc is zeroed
-				tempArc->from->excess += /*(int)*/ tempArc->flow;
-				tempArc->flow = 0;
-			}
-			else
-				// Excess is NOT high enough to saturate the arc => Excess is zeroed
-			{
-				tempArc->flow = /*(uint)*/ (tempArc->from->excess + /*(int)*/ tempArc->flow);
-				tempArc->from->excess = 0;
-			}
-		}
-	}
-
-	for (i=0; i<numNodes; ++i)
-	{
-		excess[i] = 0;
-	}
-
-	for (i=0; i<numArcs; ++i)
-	{
-		if ((arcList[i].from->label >= gap) && (arcList[i].to->label < gap))
-		{
-			mincut += arcList[i].capacity;
-		}
-
-		if ((isExcess(arcList[i].flow - arcList[i].capacity)>0) || (isExcess(arcList[i].flow) < 0))
-		{
-			check = 0;
-			printf("Warning - Capacity constraint violated on arc (%d, %d). Flow = %d, capacity = %d\n",
-				   arcList[i].from->number,
-				   arcList[i].to->number,
-				   arcList[i].flow,
-				   arcList[i].capacity);
-		}
-		excess[arcList[i].from->number - 1] -= arcList[i].flow;
-		excess[arcList[i].to->number - 1] += arcList[i].flow;
-	}
-
-	for (i=0; i<numNodes; i++)
-	{
-		if ((i != (source)) && (i != (sink)))
-		{
-			if (isExcess(excess[i]))
-			{
-				check = 0;
-				printf ("Warning - Flow balance constraint violated in node %d. Excess = %lld\n",
-						i+1,
-						excess[i]);
-			}
-		}
-	}
-
-	check = 1;
-
-	if (isExcess(excess[sink] - mincut) != 0)//(excess[sink] != mincut)
-	{
-		check = 0;
-		printf("Warning - Flow is not optimal - max flow does not equal min cut!\n");
-	}
-
-// 	if (check)
+// static /*ullint*/double checkOptimality (const uint gap)
+// {
+// /*************************************************************************
+// checkOptimality
+// *************************************************************************/
+// 	uint i, check = 1;
+// 	/*ullint*/double mincut = 0;
+// 	/*llint*/ double *excess = NULL;
+//
+// 	Arc *tempArc;
+//
+// 	excess = (/*llint*/double *) malloc (numNodes * sizeof (double/*llint*/));
+// 	if (!excess)
 // 	{
-// 		printf ("Solution checks as optimal. \t Max Flow: \t %lld\n", mincut);
+// 		printf("Out of memory\n");
+// 		exit(0);
 // 	}
+//
+// 	// Pushing depicits from all sink adjacent nodes to the sink
+// 	for (i=0; i<nodesList[sink].numOutOfTree; ++i)
+// 	{
+// 		tempArc = nodesList[sink].outOfTree[i];
+// 		if (isExcess(tempArc->from->excess) < 0)
+// 		{
+// 			if (isExcess((tempArc->from->excess + /*(int)*/ tempArc->flow))  < 0)
+// 			{
+// 				// Excess is high enough to saturate the arc => Flow on residual arc is zeroed
+// 				tempArc->from->excess += /*(int)*/ tempArc->flow;
+// 				tempArc->flow = 0;
+// 			}
+// 			else
+// 				// Excess is NOT high enough to saturate the arc => Excess is zeroed
+// 			{
+// 				tempArc->flow = /*(uint)*/ (tempArc->from->excess + /*(int)*/ tempArc->flow);
+// 				tempArc->from->excess = 0;
+// 			}
+// 		}
+// 	}
+//
+// 	for (i=0; i<numNodes; ++i)
+// 	{
+// 		excess[i] = 0;
+// 	}
+//
+// 	for (i=0; i<numArcs; ++i)
+// 	{
+// 		if ((arcList[i].from->label >= gap) && (arcList[i].to->label < gap))
+// 		{
+// 			mincut += arcList[i].capacity;
+// 		}
+//
+// 		if ((isExcess(arcList[i].flow - arcList[i].capacity)>0) || (isExcess(arcList[i].flow) < 0))
+// 		{
+// 			check = 0;
+// 			printf("Warning - Capacity constraint violated on arc (%d, %d). Flow = %lf, capacity = %lf\n",
+// 				   arcList[i].from->number,
+// 				   arcList[i].to->number,
+// 				   arcList[i].flow,
+// 				   arcList[i].capacity);
+// 		}
+// 		excess[arcList[i].from->number - 1] -= arcList[i].flow;
+// 		excess[arcList[i].to->number - 1] += arcList[i].flow;
+// 	}
+//
+// 	for (i=0; i<numNodes; i++)
+// 	{
+// 		if ((i != (source)) && (i != (sink)))
+// 		{
+// 			if (isExcess(excess[i]))
+// 			{
+// 				check = 0;
+// 				printf ("Warning - Flow balance constraint violated in node %d. Excess = %lf\n",
+// 						i+1,
+// 						excess[i]);
+// 			}
+// 		}
+// 	}
+//
+// 	check = 1;
+//
+// 	if (isExcess(excess[sink] - mincut) != 0)//(excess[sink] != mincut)
+// 	{
+// 		check = 0;
+// 		printf("Warning - Flow is not optimal - max flow does not equal min cut!\n");
+// 	}
+//
+// // 	if (check)
+// // 	{
+// // 		printf ("Solution checks as optimal. \t Max Flow: \t %lld\n", mincut);
+// // 	}
+//
+// 	free (excess);
+// 	excess = NULL;
+// 	return mincut;
+// }
 
-	free (excess);
-	excess = NULL;
-	return mincut;
-}
+// static void decompose (Node *excessNode, const uint source, uint *iteration)
+// {
+// /*************************************************************************
+// decompose
+// *************************************************************************/
+// 	Node *current = excessNode;
+// 	Arc *tempArc;
+// 	/*uint*/double bottleneck = excessNode->excess;
+//
+// 	// Find the bottleneck along a path to the source or on a cycle
+// 	for ( ;(current->number != source) && (current->visited < (*iteration)) /*&& (current->nextArc < current->numOutOfTree)*/; // Added by Cheng
+// 		 current = tempArc->from)
+// 	{
+// 		current->visited = (*iteration);
+// 		tempArc = current->outOfTree[current->nextArc];
+//
+// 		if (isExcess(tempArc->flow - bottleneck) < 0) //(tempArc->flow < bottleneck)
+// 		{
+// 			bottleneck = tempArc->flow;
+// 		}
+// 	}
+//
+// 	if (current->number == source) // the DFS reached the source
+// 	{
+// 		excessNode->excess -= bottleneck;
+// 		current = excessNode;
+//
+// 		// Push the excess all the way to the source
+// 		while (current->number != source)
+// 		{
+// 			tempArc = current->outOfTree[current->nextArc]; // Pick arc going out of node to push excess to
+// 			tempArc->flow -= bottleneck; // Push back bottleneck excess on this arc
+//
+// 			if (isFlow(tempArc->flow)) // If there is still flow on this arc do sort on this current node
+// 			{
+// 				minisort(current);
+// 			} else {
+// 				++ current->nextArc;
+// 			}
+//
+// 			current = tempArc->from;
+// 		}
+// 		return;
+// 	}
+//
+// 	++ (*iteration);
+//
+// 	// This part is temporarily added by Cheng Lu.
+// //	if (current->visited == (*iteration)-1)
+// 		bottleneck = current->outOfTree[current->nextArc]->flow;
+// /*	else{
+// 		current = excessNode;
+// 		bottleneck = excessNode->excess;
+// 	}*/
+//
+// 	while (current->visited < (*iteration)) //&& (current->nextArc < current->numOutOfTree)) // Added by Cheng
+// 	{
+// 		current->visited = (*iteration);
+// 		tempArc = current->outOfTree[current->nextArc];
+//
+// 		if (isExcess(tempArc->flow - bottleneck) < 0)//(tempArc->flow < bottleneck)
+// 		{
+// 			bottleneck = tempArc->flow;
+// 		}
+// 		current = tempArc->from;
+// 	}
+//
+// 	++ (*iteration);
+//
+// 	// This part is temporarily added by Cheng Lu.
+// /*	if (current->visited == (*iteration)-1)
+// 		;
+// 	else{
+// 		current = excessNode;
+// 	}*/
+//
+// 	while (current->visited < (*iteration)) //&& (current->nextArc < current->numOutOfTree)) // Added by Cheng
+// 	{
+// 		current->visited = (*iteration);
+//
+// 		tempArc = current->outOfTree[current->nextArc];
+// 		tempArc->flow -= bottleneck;
+//
+// 		if (isFlow(tempArc->flow))
+// 		{
+// 			minisort(current);
+// 			current = tempArc->from;
+// 		} else {
+// 			++ current->nextArc;
+// 			current = tempArc->from;
+// 		}
+// 	}
+// }
 
-static void decompose (Node *excessNode, const uint source, uint *iteration)
-{
-/*************************************************************************
-decompose
-*************************************************************************/
-	Node *current = excessNode;
-	Arc *tempArc;
-	/*uint*/double bottleneck = excessNode->excess;
-
-	// Find the bottleneck along a path to the source or on a cycle
-	for ( ;(current->number != source) && (current->visited < (*iteration)) /*&& (current->nextArc < current->numOutOfTree)*/; // Added by Cheng
-		 current = tempArc->from)
-	{
-		current->visited = (*iteration);
-		tempArc = current->outOfTree[current->nextArc];
-
-		if (isExcess(tempArc->flow - bottleneck) < 0) //(tempArc->flow < bottleneck)
-		{
-			bottleneck = tempArc->flow;
-		}
-	}
-
-	if (current->number == source) // the DFS reached the source
-	{
-		excessNode->excess -= bottleneck;
-		current = excessNode;
-
-		// Push the excess all the way to the source
-		while (current->number != source)
-		{
-			tempArc = current->outOfTree[current->nextArc]; // Pick arc going out of node to push excess to
-			tempArc->flow -= bottleneck; // Push back bottleneck excess on this arc
-
-			if (isFlow(tempArc->flow)) // If there is still flow on this arc do sort on this current node
-			{
-				minisort(current);
-			} else {
-				++ current->nextArc;
-			}
-
-			current = tempArc->from;
-		}
-		return;
-	}
-
-	++ (*iteration);
-
-	// This part is temporarily added by Cheng Lu.
-//	if (current->visited == (*iteration)-1)
-		bottleneck = current->outOfTree[current->nextArc]->flow;
-/*	else{
-		current = excessNode;
-		bottleneck = excessNode->excess;
-	}*/
-
-	while (current->visited < (*iteration)) //&& (current->nextArc < current->numOutOfTree)) // Added by Cheng
-	{
-		current->visited = (*iteration);
-		tempArc = current->outOfTree[current->nextArc];
-
-		if (isExcess(tempArc->flow - bottleneck) < 0)//(tempArc->flow < bottleneck)
-		{
-			bottleneck = tempArc->flow;
-		}
-		current = tempArc->from;
-	}
-
-	++ (*iteration);
-
-	// This part is temporarily added by Cheng Lu.
-/*	if (current->visited == (*iteration)-1)
-		;
-	else{
-		current = excessNode;
-	}*/
-
-	while (current->visited < (*iteration)) //&& (current->nextArc < current->numOutOfTree)) // Added by Cheng
-	{
-		current->visited = (*iteration);
-
-		tempArc = current->outOfTree[current->nextArc];
-		tempArc->flow -= bottleneck;
-
-		if (isFlow(tempArc->flow))
-		{
-			minisort(current);
-			current = tempArc->from;
-		} else {
-			++ current->nextArc;
-			current = tempArc->from;
-		}
-	}
-}
-
-static void recoverFlow (const uint gap)
-{
-/*************************************************************************
-recoverFlow
-*************************************************************************/
-	uint iteration = 1;
-	uint i, j;
-	Arc *tempArc;
-	Node *tempNode;
-
-	Node **nodePtrArray;
-
-	if ((nodePtrArray = (Node **) malloc (numNodes * sizeof (Node *))) == NULL)
-	{
-		printf("Out of memory\n");
-		exit(0);
-	}
-
-	for (i=0; i < numNodes ; i++)
-		nodePtrArray[i] = &nodesList[i];
-
-	// Adding arcs FROM the Source to Source adjacent nodes.
-	for (i=0; i<nodesList[source].numOutOfTree; ++i)
-	{
-		tempArc = nodesList[source].outOfTree[i];
-		addOutOfTreeNode (tempArc->to, tempArc);
-	}
-
-	// Zeroing excess on source and sink nodes
-	nodesList[source].excess = 0;
-	nodesList[sink].excess = 0;
-
-	for (i=0; i<numNodes; ++i)
-	{
-		tempNode = &nodesList[i];
-
-		if ((i == (source)) || (i == (sink)))
-		{
-			continue;
-		}
-
-		if (tempNode->label >= gap) //tempNode is in SINK set
-		{
-			tempNode->nextArc = 0;
-			if ((tempNode->parent) && (isFlow(tempNode->arcToParent->flow)))
-			{
-				addOutOfTreeNode (tempNode->arcToParent->to, tempNode->arcToParent);
-			}
-
-			for (j=0; j<tempNode->numOutOfTree; ++j)
-			{ // go over all sink-set-node's arcs and look for arc with NO flow
-				if (!isFlow(tempNode->outOfTree[j]->flow))
-				{	// Remove arc with no flow
-					-- tempNode->numOutOfTree;
-					tempNode->outOfTree[j] = tempNode->outOfTree[tempNode->numOutOfTree];
-					-- j;
-				}
-			}
-
-			sort(tempNode);
-		}
-	}
-
-	for (i=lowestPositiveExcessNode ; i < numNodes ; ++i)
-	{
-		tempNode = nodePtrArray[i];
-		while (isExcess(tempNode->excess) > 0)
-		{
-			++ iteration;
-			decompose(tempNode, source, &iteration);
-		}
-	}
-
-	free(nodePtrArray);
-	nodePtrArray = NULL;
-}
+// static void recoverFlow (const uint gap)
+// {
+// /*************************************************************************
+// recoverFlow
+// *************************************************************************/
+// 	uint iteration = 1;
+// 	uint i, j;
+// 	Arc *tempArc;
+// 	Node *tempNode;
+//
+// 	Node **nodePtrArray;
+//
+// 	if ((nodePtrArray = (Node **) malloc (numNodes * sizeof (Node *))) == NULL)
+// 	{
+// 		printf("Out of memory\n");
+// 		exit(0);
+// 	}
+//
+// 	for (i=0; i < numNodes ; i++)
+// 		nodePtrArray[i] = &nodesList[i];
+//
+// 	// Adding arcs FROM the Source to Source adjacent nodes.
+// 	for (i=0; i<nodesList[source].numOutOfTree; ++i)
+// 	{
+// 		tempArc = nodesList[source].outOfTree[i];
+// 		addOutOfTreeNode (tempArc->to, tempArc);
+// 	}
+//
+// 	// Zeroing excess on source and sink nodes
+// 	nodesList[source].excess = 0;
+// 	nodesList[sink].excess = 0;
+//
+// 	for (i=0; i<numNodes; ++i)
+// 	{
+// 		tempNode = &nodesList[i];
+//
+// 		if ((i == (source)) || (i == (sink)))
+// 		{
+// 			continue;
+// 		}
+//
+// 		if (tempNode->label >= gap) //tempNode is in SINK set
+// 		{
+// 			tempNode->nextArc = 0;
+// 			if ((tempNode->parent) && (isFlow(tempNode->arcToParent->flow)))
+// 			{
+// 				addOutOfTreeNode (tempNode->arcToParent->to, tempNode->arcToParent);
+// 			}
+//
+// 			for (j=0; j<tempNode->numOutOfTree; ++j)
+// 			{ // go over all sink-set-node's arcs and look for arc with NO flow
+// 				if (!isFlow(tempNode->outOfTree[j]->flow))
+// 				{	// Remove arc with no flow
+// 					-- tempNode->numOutOfTree;
+// 					tempNode->outOfTree[j] = tempNode->outOfTree[tempNode->numOutOfTree];
+// 					-- j;
+// 				}
+// 			}
+//
+// 			sort(tempNode);
+// 		}
+// 	}
+//
+// 	for (i=lowestPositiveExcessNode ; i < numNodes ; ++i)
+// 	{
+// 		tempNode = nodePtrArray[i];
+// 		while (isExcess(tempNode->excess) > 0)
+// 		{
+// 			++ iteration;
+// 			decompose(tempNode, source, &iteration);
+// 		}
+// 	}
+//
+// 	free(nodePtrArray);
+// 	nodePtrArray = NULL;
+// }
 
 static void readGraphSuper(double * arcMatrix)
 /*************************************************************************
@@ -1404,8 +1404,7 @@ static void copyArcAdd(Arc *old, Arc *new)
 copyArcAdd - update arc by adding another
 *************************************************************************/
 {
-	new->constant += old->constant;
-	new->multiplier += old->multiplier;
+    new->capacity += old->capacity;
 }
 
 static void evaluateCapacities(CutProblem* problem)
@@ -1551,7 +1550,7 @@ initializeProblem - Setup problems for parametric cut
 	nodeMap = NULL;
 }
 
-static void contractProblem(CutProblem *problem, CutProblem *oldProblem, double lambdaValue, uint *lowSourceSetIndicator, uint *highSourceSetIndicator)
+static void contractProblem(CutProblem *problem, CutProblem *oldProblem, uint *lowSourceSetIndicator, uint *highSourceSetIndicator)
 /*************************************************************************
 contractProblem - create contracted instance based on lower bound and upper bound
 *************************************************************************/
@@ -1567,11 +1566,6 @@ contractProblem - create contracted instance based on lower bound and upper boun
 	int *sinkAdjacentArcIndices;
 	uint newIndexFrom, newIndexTo;
 
-	/* set cut parameters */
-	problem->cutValue = 0;
-	problem->cutMultiplier = 0;
-	problem->cutConstant = 0;
-
 	/* set solved indicator */
 	problem->solved = 0;
 
@@ -1579,7 +1573,7 @@ contractProblem - create contracted instance based on lower bound and upper boun
 	problem->optimalSourceSetIndicator = NULL;
 
 	/* initialize new lambda value */
-	problem->lambdaValue = lambdaValue;
+	problem->lambdaValue = oldProblem->lambdaValue;
 
 	/* set size of node sets */
 	problem->numSourceSet = oldProblem->numSourceSet;
@@ -1777,9 +1771,6 @@ contractProblem - create contracted instance based on lower bound and upper boun
 			++currentArc;
 		}
 	}
-
-	/* evaluate capacities */
-	evaluateCapacities(problem );
 
 	/* free local variables */
 	free(nodeMap);
@@ -2078,7 +2069,7 @@ solveProblem - solves a single instance of cut problem
 		free(arcList);
 		arcList = NULL;
 	}
-	//printCutProblem(problem);
+	printCutProblem(problem);
 	freeMemorySolve();
 }
 
@@ -2148,7 +2139,7 @@ parametricCut - Recursive function that solves the parametric cut problem
 	uint lambdaIntersectExists = 1;
 
 	// print low, high + breakpoints
-	// printf("Lambda High: %.4f\nLambda Low: %.4f\n",highProblem->lambdaValue, lowProblem->lambdaValue);
+	printf("Lambda High: %.4f\nLambda Low: %.4f\n",highProblem->lambdaValue, lowProblem->lambdaValue);
 
 	/* determine if this is the outermost recursion level*/
 	int baseLevel = 0;
@@ -2180,14 +2171,15 @@ parametricCut - Recursive function that solves the parametric cut problem
         double Klow = internalCutCapacity(lowProblem->optimalSourceSetIndicator);
         double Khigh = internalCutCapacity(highProblem->optimalSourceSetIndicator);
         double K12 = Klow - Khigh;
+        printf("K low: %lf, high; %lf, diff: %lf\n", Klow, Khigh, K12);
 
         lambdaIntersect = computeIntersect(pdifference, K12);
 
 		lambdaIntersectExists = 1;
 
-        // printf("Intersect: %lf\n", lambdaIntersect);
-
         free(pdifference);
+
+        printf("Intersect: %lf\n", lambdaIntersect);
 	}
 	else // conclude that there is no intersection if denominator is too close to zero
 	{
@@ -2279,7 +2271,6 @@ main - Main function
 {
 	reset_globals();
 
-	/*ullint*/double flow = 0;
 	double readStart, readEnd, initStart, initEnd, solveStart, solveEnd;
 
 	numArcScans = 0;
