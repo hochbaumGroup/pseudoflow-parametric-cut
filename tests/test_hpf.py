@@ -1,5 +1,6 @@
 import pytest
 import networkx as nx
+from pseudoflow import hpf
 
 
 @pytest.fixture()
@@ -18,8 +19,6 @@ def G():
 
 
 def test_hpf_nonparametric(G):
-    from pseudoflow import hpf
-
     source = 0
     sink = 2
     breakpoints, cuts, info = hpf(G, source, sink, const_cap="const")
@@ -91,4 +90,48 @@ def test_hpf_with_parametric_sink_arcs():
         1: [0, 0, 1, 1],
         2: [0, 1, 1, 1],
         "t": [0, 0, 0, 0],
+    }
+
+
+def test_missing_breakpoint():
+    G = nx.DiGraph()
+
+    G.add_edge("s", 0, constant=-1.64 / 3.0, multiplier=2 / 3.0)
+    G.add_edge("s", 3, constant=-0.78 / 3.0, multiplier=2 / 3.0)
+    G.add_edge("s", 4, constant=-1.02 / 3.0, multiplier=2 / 3.0)
+    G.add_edge(0, "t", constant=1.64 / 3.0, multiplier=-2 / 3.0)
+    G.add_edge(3, "t", constant=0.78 / 3.0, multiplier=-2 / 3.0)
+    G.add_edge(4, "t", constant=1.02 / 3.0, multiplier=-2 / 3.0)
+
+    G.add_edge(0, 1, constant=0.88 / 4.74, multiplier=0)
+    G.add_edge(0, 3, constant=0.67 / 4.74, multiplier=0)
+    G.add_edge(1, 0, constant=0.35 / 4.74, multiplier=0)
+    G.add_edge(1, 2, constant=0.24 / 4.74, multiplier=0)
+    G.add_edge(1, 3, constant=0.20 / 4.74, multiplier=0)
+    G.add_edge(1, 4, constant=0.24 / 4.74, multiplier=0)
+    G.add_edge(2, 3, constant=0.92 / 4.74, multiplier=0)
+    G.add_edge(3, 0, constant=0.21 / 4.74, multiplier=0)
+    G.add_edge(3, 1, constant=0.36 / 4.74, multiplier=0)
+    G.add_edge(3, 2, constant=0.12 / 4.74, multiplier=0)
+    G.add_edge(4, 0, constant=0.31 / 4.74, multiplier=0)
+    G.add_edge(4, 3, constant=0.24 / 4.74, multiplier=0)
+
+    breakpoints, cuts, _ = hpf(
+        G,
+        "s",
+        "t",
+        const_cap="constant",
+        mult_cap="multiplier",
+        lambdaRange=[0.000, 1.0001],
+        roundNegativeCapacity=True,
+    )
+    assert breakpoints == pytest.approx([0.570380, 0.5748101265822786, 1.0001])
+    assert cuts == {
+        "s": [1, 1, 1],
+        "t": [0, 0, 0],
+        0: [0, 0, 1],
+        1: [0, 0, 1],
+        2: [0, 1, 1],
+        3: [0, 1, 1],
+        4: [0, 0, 1],
     }
