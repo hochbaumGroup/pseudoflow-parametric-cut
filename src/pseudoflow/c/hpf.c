@@ -414,5 +414,8 @@ main - Main function
 
 	writeOutput(argv[2], numBreakpoints, numNodes, breakpoints, cuts, stats, times);
 
+    free(breakpoints);
+    free(cuts);
+
 	return 1;
 }
