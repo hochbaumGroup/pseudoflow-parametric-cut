@@ -414,6 +414,7 @@ main - Main function
 
 	writeOutput(argv[2], numBreakpoints, numNodes, breakpoints, cuts, stats, times);
 
+    free(arcMatrix);
     free(breakpoints);
     free(cuts);
 
