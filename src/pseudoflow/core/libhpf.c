@@ -2033,7 +2033,6 @@ parametricCut - Recursive function that solves the parametric cut problem
     uint *pdifference_low_high;
     differenceSourceSets(&pdifference_low_high, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
     uint num_nodes_different_low_high = sum_array_uint(pdifference_low_high, numNodesSuper);
-    free(pdifference_low_high);
 
 	/* find lambda value for which the optimal cut functions(expressed as a function of lambda) for the lower bound and upper bound problem intersect. */
 	if (num_nodes_different_low_high > 0)
@@ -2095,6 +2094,7 @@ parametricCut - Recursive function that solves the parametric cut problem
     {
         // printf("Stop recursion: Same cuts!\n");
     }
+free(pdifference_low_high);
 }
 
 void reset_globals()
