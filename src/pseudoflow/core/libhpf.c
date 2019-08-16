@@ -1781,6 +1781,8 @@ addBreakpoint - Adds a breakpoint to the linkedlist
 	Breakpoint *newBreakpoint;
 	uint i;
 
+    // printf("New breakpoint: %lf\n", lambdaValue);
+
 	/* allocate memory for breakpoint*/
 	if ((newBreakpoint= (Breakpoint*)malloc(sizeof(Breakpoint))) == NULL)
 	{
@@ -2104,7 +2106,7 @@ parametricCut - Recursive function that solves the parametric cut problem
 *************************************************************************/
 {
 	// print low, high + breakpoints
-	printf("Lambda High: %.4f\nLambda Low: %.4f\n",highProblem->lambdaValue, lowProblem->lambdaValue);
+	// printf("Lambda High: %.4f\nLambda Low: %.4f\n",highProblem->lambdaValue, lowProblem->lambdaValue);
 
     // determine difference between source sets of cut.
     uint *pdifference_low_high;
