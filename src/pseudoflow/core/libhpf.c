@@ -2106,28 +2106,7 @@ parametricCut - Recursive function that solves the parametric cut problem
 	// print low, high + breakpoints
 	printf("Lambda High: %.4f\nLambda Low: %.4f\n",highProblem->lambdaValue, lowProblem->lambdaValue);
 
-	/* determine if this is the outermost recursion level (to add upper )*/
-	int baseLevel = 0;
-	if (lowProblem->solved == 0 && highProblem->solved == 0)
-		baseLevel = 1;
-
-	/* solve lower bound problem if necessary by finding minimal source set */
-	if (lowProblem->solved == 0)
-	{
-		solveProblem(lowProblem, 0);
-		lowProblem->solved = 1;
-        destroyProblem(lowProblem, 0);
-	}
-
-
-	/* solve upper bound problem if nessecary by finding maximal source set */
-	if (highProblem->solved == 0)
-	{
-		solveProblem(highProblem, 1);
-		highProblem->solved = 1;
-        destroyProblem(lowProblem, 0);
-	}
-
+    // determine difference between source sets of cut.
     uint *pdifference_low_high;
     differenceSourceSets(&pdifference_low_high, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
     uint num_nodes_different_low_high = sum_array_uint(pdifference_low_high, numNodesSuper);
@@ -2195,16 +2174,7 @@ parametricCut - Recursive function that solves the parametric cut problem
     {
         // printf("Stop recursion: Same cuts!\n");
     }
-
-    /* add cut corresponding to lambdaHigh iff first recursion level */
-	if (baseLevel == 1)
-	{
-		addBreakpoint(highProblem->lambdaValue, highProblem->optimalSourceSetIndicator);
-	}
-
-
 }
-
 
 void reset_globals()
 {
@@ -2287,7 +2257,22 @@ main - Main function
 	solveStart = clock();
 	if (useParametricCut == 1)
 	{
+        // solve lower bound problem
+        solveProblem(&lowProblem, 0);
+		lowProblem.solved = 1;
+        destroyProblem(&lowProblem, 0);
+
+        // solve upper bound problem
+        solveProblem(&highProblem, 1);
+		highProblem.solved = 1;
+        destroyProblem(&lowProblem, 0);
+
+        // find breakpoints + recurse
 		parametricCut(&lowProblem, &highProblem);
+
+        // add upper bound as final breakpoint for last interval.
+        addBreakpoint(highProblem.lambdaValue, highProblem.optimalSourceSetIndicator);
+
 		/* deallocate memory */
 		destroyProblem(&lowProblem, 1);
 		destroyProblem(&highProblem, 1);
