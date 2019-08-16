@@ -151,7 +151,7 @@ typedef struct Node
 typedef struct CutProblem
 {
 	uint numNodesInList;
-	uint numSourceSet;
+    uint numSourceSet;
 	uint numSinkSet;
 	uint numArcs;
 	uint solved;
@@ -161,7 +161,7 @@ typedef struct CutProblem
 	double cutValue;
 	Node *sourceSet;
 	Node *sinkSet;
-	uint *optimalSourceSetIndicator;
+    uint *optimalSourceSetIndicator;
 } CutProblem;
 
 typedef struct Root
@@ -1357,7 +1357,7 @@ printOutput
 	*cuts = cutsPointer;
 }
 
-static void copyArcNew(CutProblem *problem, int *nodeMap, Arc *old, Arc *new)
+static void copyArcNew(CutProblem *problem, int *nodeMap, Arc *old, Arc *new, double lambda)
 /*************************************************************************
 copyArcNew - copy basic info arc and point to new nodes
 *************************************************************************/
@@ -1366,8 +1366,21 @@ copyArcNew - copy basic info arc and point to new nodes
 	uint newIndexTo;
 
 	initializeArc(new);
-	new->constant = old->constant;
-	new->multiplier = old->multiplier;
+	new->capacity = old->multiplier * lambda + old->constant;
+
+    if (new->capacity < 0)
+    {
+        if (roundNegativeCapacity)
+        {
+            new->capacity = 0;
+        }
+        else
+        {
+            printf("Negative capacity for lambda equal to %f. Set roundNegativeCapacity to 1 if the value should be rounded to 0.\n",problem->lambdaValue);
+            exit(0);
+        }
+    }
+
 
 	/* set start and end node */
 	newIndexFrom = nodeMap[old->from->number];
@@ -1380,12 +1393,27 @@ copyArcNew - copy basic info arc and point to new nodes
 	++ new->to->numAdjacent;
 }
 
-static void copyArcAdd(Arc *old, Arc *new)
+static void copyArcAdd(Arc *old, Arc *new, double lambda)
 /*************************************************************************
 copyArcAdd - update arc by adding another
 *************************************************************************/
+
 {
-    new->capacity += old->capacity;
+    double additional_capacity = old->multiplier * lambda + old->constant;
+
+    if (additional_capacity < 0)
+    {
+        if (roundNegativeCapacity)
+        {
+            additional_capacity = 0;
+        }
+        else
+        {
+            printf("Negative capacity for lambda equal to %f. Set roundNegativeCapacity to 1 if the value should be rounded to 0.\n", lambda);
+            exit(0);
+        }
+    }
+    new->capacity +=  additional_capacity;
 }
 
 static void evaluateCapacities(CutProblem* problem)
@@ -1430,14 +1458,16 @@ destroyProblem - Destruct function for CutProblem struct
     }
 }
 
-
-static void initializeProblem(CutProblem * problem, Node *nodeListProblem, uint numNodesProblem, Arc *arcListProblem, uint numArcsProblem, const double lambdaValue)
+static void initializeContractedProblem(CutProblem *problem, Node *nodeListProblem, uint numNodesProblem, Arc *arcListProblem, uint numArcsProblem, const double lambdaValue, uint *solutionLow, uint *solutionHigh)
 /*************************************************************************
-initializeProblem - Setup problems for parametric cut
+initializeContractedProblem - Setup problems for parametric cut
 *************************************************************************/
 {
-	uint i;
+	uint i, newIndexTo, newIndexFrom;
 	uint currentNode = 2;
+    uint currentSourceSet = 0;
+    uint currentSinkSet = 0;
+    uint currentArc = 0;
 	int *nodeMap; /* indicator index of node in new nodeList. */
 
 	/* set cut parameters */
@@ -1454,7 +1484,7 @@ initializeProblem - Setup problems for parametric cut
 	/* set size of node sets */
 	problem->numSourceSet = 1;
 	problem->numSinkSet = 1;
-	problem->numNodesInList = numNodesProblem;
+	problem->numNodesInList = 2;
 
 	/* allocateSpace for nodeMap */
 	if ((nodeMap = (int *)malloc(numNodesProblem* sizeof(int))) == NULL)
@@ -1463,126 +1493,33 @@ initializeProblem - Setup problems for parametric cut
 		exit(0);
 	}
 
-	/* allocate space for the node sets*/
-	if ((problem->nodeList = (Node *)malloc(problem->numNodesInList * sizeof(Node))) == NULL)
-	{
-		printf("Out of memory\n");
-		exit(0);
-	}
-	if ((problem->sourceSet = (Node *)malloc(problem->numSourceSet * sizeof(Node))) == NULL)
-	{
-		printf("Out of memory\n");
-		exit(0);
-	}
-	if ((problem->sinkSet = (Node *)malloc(problem->numSourceSet * sizeof(Node))) == NULL)
-	{
-		printf("Out of memory\n");
-		exit(0);
-	}
-
-	/* create new node sets*/
-	for (i = 0; i < numNodesProblem; i++)
+    for (i = 0; i < numNodesProblem; i++)
 	{
 		if (i == sourceSuper)
 		{
-			initializeNode( &problem->sourceSet[0], 0);
-			problem->sourceSet[0].originalIndex = nodeListProblem[i].originalIndex;
-			initializeNode(&problem->nodeList[0], 0); /* source is always first node */
-			problem->nodeList[0].originalIndex = -1; /* indicate artificial source node */
 			nodeMap[i] = 0;
 		}
 		else if (i == sinkSuper)
 		{
-			initializeNode(&problem->sinkSet[0], 0);
-			problem->sinkSet[0].originalIndex = nodeListProblem[i].originalIndex;
-			initializeNode(&problem->nodeList[1], 1); /* sink is always seond node */
-			problem->nodeList[1].originalIndex = -2; /* indicate artificial sink node */
 			nodeMap[i] = 1;
 		}
-		else
-		{
-			initializeNode(&problem->nodeList[currentNode], currentNode);
-			problem->nodeList[currentNode].originalIndex = nodeListProblem[i].originalIndex;
-			nodeMap[i] = currentNode;
+        else if (i != sourceSuper && solutionLow[i] == 1)
+        {   // Source set nodes
+			nodeMap[i] = 0;
+            problem->numSourceSet++;
+        }
+        else if (i != sinkSuper && solutionHigh[i] == 0)
+        {
+            // sink set nodes
+			nodeMap[i] = 1;
+            problem->numSinkSet++;
+        }
+        else
+        {
+            nodeMap[i] = currentNode;
 			++currentNode;
-		}
-	}
-
-	/* set number of arcs */
-	problem->numArcs = numArcsProblem;
-
-	/* allocate space for arcs */
-	if ((problem->arcList = (Arc *)malloc(problem->numArcs * sizeof(Arc))) == NULL)
-	{
-		printf("Out of memory\n");
-		exit(0);
-	}
-
-	/* copy arcs */
-	for (i = 0; i < numArcsProblem; i++)
-	{
-		copyArcNew(problem, nodeMap, &arcListProblem[i], &problem->arcList[i]);
-	}
-
-	/* evaluate capacities */
-	evaluateCapacities(problem);
-
-	/* free nodeMap*/
-	free(nodeMap);
-	nodeMap = NULL;
-}
-
-static void contractProblem(CutProblem *problem, CutProblem *oldProblem, uint *lowSourceSetIndicator, uint *highSourceSetIndicator)
-/*************************************************************************
-contractProblem - create contracted instance based on lower bound and upper bound
-*************************************************************************/
-{
-	uint i;
-	uint originalIndex;
-	uint currentNodeInList = 2;
-	uint currentSourceSet = oldProblem->numSourceSet;
-	uint currentSinkSet = oldProblem->numSinkSet;
-	uint currentArc = 0;
-	int *nodeMap; /* indicator index of node in new nodeList. */
-	int *sourceAdjacentArcIndices;
-	int *sinkAdjacentArcIndices;
-	uint newIndexFrom, newIndexTo;
-
-	/* set solved indicator */
-	problem->solved = 0;
-
-	/* initialize optimal cut */
-	problem->optimalSourceSetIndicator = NULL;
-
-	/* initialize new lambda value */
-	problem->lambdaValue = oldProblem->lambdaValue;
-
-	/* set size of node sets */
-	problem->numSourceSet = oldProblem->numSourceSet;
-	problem->numSinkSet = oldProblem->numSinkSet;
-	problem->numNodesInList = oldProblem->numNodesInList;
-
-	/* allocateSpace for nodeMap */
-	if ((nodeMap = (int *)malloc(oldProblem->numNodesInList* sizeof(int))) == NULL)
-	{
-		printf("Out of memory\n");
-		exit(0);
-	}
-
-	/* determine size node sets - we can skip source and sink since they will stay*/
-	for (i = 2; i < oldProblem->numNodesInList; i++)
-	{
-		originalIndex = oldProblem->nodeList[i].originalIndex;
-		if (lowSourceSetIndicator[originalIndex] == 1)
-		{
-			++problem->numSourceSet;
-			--problem->numNodesInList;
-		}
-		else if (highSourceSetIndicator[originalIndex] == 0)
-		{
-			++problem->numSinkSet;
-			--problem->numNodesInList;
-		}
+            problem->numNodesInList++;
+        }
 	}
 
 	/* allocate space for the node sets*/
@@ -1602,60 +1539,46 @@ contractProblem - create contracted instance based on lower bound and upper boun
 		exit(0);
 	}
 
-	/* copy source set */
-	for (i = 0; i < oldProblem->numSourceSet; i++)
-	{
-		initializeNode(&problem->sourceSet[i], i);
-		problem->sourceSet[i].originalIndex = oldProblem->sourceSet[i].originalIndex;
-	}
-	/* copy sink set */
-	for (i = 0; i < oldProblem->numSinkSet; i++)
-	{
-		initializeNode(&problem->sinkSet[i], i);
-		problem->sinkSet[i].originalIndex = oldProblem->sinkSet[i].originalIndex;
-	}
+    // initialize nodes
+    for (i = 0; i < problem->numNodesInList; i++)
+    {
+        initializeNode(&problem->nodeList[i], i);
+    }
+    for (i = 0; i < problem->numSourceSet; i++)
+    {
+        initializeNode(&problem->sourceSet[i], i);
+    }
+    for (i = 0; i < problem->numSinkSet; i++)
+    {
+        initializeNode(&problem->sinkSet[i], i);
+    }
 
-	/* copy source */
-	initializeNode(&problem->nodeList[0], 0); /* source is always first node */
-	problem->nodeList[0].originalIndex = -1; /* indicate artificial source node */
-	nodeMap[0] = 0;
+     /* source is always first node */
+    problem->nodeList[0].originalIndex = -1; /* indicate artificial source node */
+    problem->nodeList[1].originalIndex = -2; /* indicate artificial sink node */
 
-	/* copy sink */
-	initializeNode(&problem->nodeList[1], 1); /* sink is always seond node */
-	problem->nodeList[1].originalIndex = -2; /* indicate artificial sink node */
-	nodeMap[1] = 1;
-
-	/* create new node list - we can ignore source and sink since they don't change */
-	for (i = 2; i < oldProblem->numNodesInList; i++)
+	/* create new node sets*/
+	for (i = 0; i < numNodesProblem; i++)
 	{
-		originalIndex = oldProblem->nodeList[i].originalIndex;
-		if (lowSourceSetIndicator[originalIndex] == 1)
+		if (nodeMap[i] == 0)
 		{
-			initializeNode(&problem->sourceSet[currentSourceSet], currentSourceSet);
-			problem->sourceSet[currentSourceSet].originalIndex = oldProblem->nodeList[i].originalIndex;
-			nodeMap[i] = 0;
-			++currentSourceSet;
+			problem->sourceSet[currentSourceSet].originalIndex = nodeListProblem[i].originalIndex;
+			currentSourceSet++;
 		}
-		else if (highSourceSetIndicator[ originalIndex] == 0)
+		else if (nodeMap[i] == 1)
 		{
-			initializeNode(&problem->sinkSet[currentSinkSet], currentSinkSet);
-			problem->sinkSet[currentSinkSet].originalIndex = oldProblem->nodeList[i].originalIndex;
-			nodeMap[i] = 1;
-			++currentSinkSet;
+			problem->sinkSet[currentSinkSet].originalIndex = nodeListProblem[i].originalIndex;
+			currentSinkSet++;
 		}
 		else
 		{
-			initializeNode(&problem->nodeList[currentNodeInList], currentNodeInList);
-			problem->nodeList[currentNodeInList].originalIndex = oldProblem->nodeList[i].originalIndex;
-			nodeMap[i] = currentNodeInList;
-			++currentNodeInList;
+			problem->nodeList[nodeMap[i]].originalIndex = nodeListProblem[i].originalIndex;
 		}
 	}
 
-	/* set number of arcs */
-	problem->numArcs = oldProblem->numArcs;
+    int *sourceAdjacentArcIndices, *sinkAdjacentArcIndices;
 
-	/* allocate space for source and sink arc indices */
+    /* allocate space for source and sink arc indices */
 	if ((sourceAdjacentArcIndices = (int *)malloc(problem->numNodesInList *  sizeof(int))) == NULL)
 	{
 		printf("Out of memory\n");
@@ -1675,11 +1598,12 @@ contractProblem - create contracted instance based on lower bound and upper boun
 	}
 
 	/* determine new number of arcs */
-	for (i = 0; i < oldProblem->numArcs; i++)
+	for (i = 0; i < numArcsProblem; i++)
 	{
-		newIndexFrom = nodeMap[oldProblem->arcList[i].from->number];
-		newIndexTo = nodeMap[oldProblem->arcList[i].to->number];
-		if (newIndexFrom == newIndexTo || newIndexTo==0 || newIndexFrom==1)
+		newIndexFrom = nodeMap[arcListProblem[i].from->number];
+		newIndexTo = nodeMap[arcListProblem[i].to->number];
+
+		if (newIndexFrom == newIndexTo || newIndexTo==0 || newIndexFrom==1 || (newIndexFrom == 0 && newIndexTo == 1))
 		{
 		}
 		else if (newIndexFrom == 0)
@@ -1716,51 +1640,52 @@ contractProblem - create contracted instance based on lower bound and upper boun
 
 	/* copy arcs */
 	currentArc = 0;
-	for (i = 0; i <oldProblem->numArcs; i++)
+	for (i = 0; i < numArcsProblem; i++)
 	{
-		newIndexFrom = nodeMap[oldProblem->arcList[i].from->number];
-		newIndexTo = nodeMap[oldProblem->arcList[i].to->number];
-		if (newIndexFrom == newIndexTo || newIndexTo==0 || newIndexFrom==1)
+		newIndexFrom = nodeMap[arcListProblem[i].from->number];
+		newIndexTo = nodeMap[arcListProblem[i].to->number];
+
+		if (newIndexFrom == newIndexTo || newIndexTo==0 || newIndexFrom==1 ||  (newIndexFrom == 0 && newIndexTo == 1))
 		{
 		}
 		else if (newIndexFrom == 0)
 		{
 			if (sourceAdjacentArcIndices[newIndexTo] == currentArc )
 			{
-				copyArcNew(problem, nodeMap, &oldProblem->arcList[i], &problem->arcList[currentArc]);
+				copyArcNew(problem, nodeMap, &arcListProblem[i], &problem->arcList[currentArc], lambdaValue);
 				++currentArc;
 			}
 			else
 			{
-				copyArcAdd(&oldProblem->arcList[i], &problem->arcList[sourceAdjacentArcIndices[newIndexTo]]);
+				copyArcAdd(&arcListProblem[i], &problem->arcList[sourceAdjacentArcIndices[newIndexTo]], lambdaValue);
 			}
 		}
 		else if (newIndexTo == 1)
 		{
 			if (sinkAdjacentArcIndices[newIndexFrom] == currentArc)
 			{
-				copyArcNew(problem, nodeMap, &oldProblem->arcList[i], &problem->arcList[currentArc]);
+				copyArcNew(problem, nodeMap, &arcListProblem[i], &problem->arcList[currentArc], lambdaValue);
 				++currentArc;
 			}
 			else
 			{
-				copyArcAdd(&oldProblem->arcList[i], &problem->arcList[sinkAdjacentArcIndices[newIndexFrom]]);
+				copyArcAdd(&arcListProblem[i], &problem->arcList[sinkAdjacentArcIndices[newIndexFrom]], lambdaValue);
 			}
 		}
 		else
 		{
-			copyArcNew(problem, nodeMap, &oldProblem->arcList[i], &problem->arcList[currentArc]);
+			copyArcNew(problem, nodeMap, &arcListProblem[i], &problem->arcList[currentArc], lambdaValue);
 			++currentArc;
 		}
 	}
 
-	/* free local variables */
+    /* free nodeMap*/
 	free(nodeMap);
 	nodeMap = NULL;
-	free(sourceAdjacentArcIndices);
-	sourceAdjacentArcIndices = NULL;
-	free(sinkAdjacentArcIndices);
-	sinkAdjacentArcIndices = NULL;
+    free(sourceAdjacentArcIndices);
+    sourceAdjacentArcIndices = NULL;
+    free(sinkAdjacentArcIndices);
+    sinkAdjacentArcIndices = NULL;
 }
 
 static void initializeParametricCut(CutProblem *lowProblem, CutProblem *highProblem)
@@ -1769,13 +1694,21 @@ initializeParametricCut - Set up data structures for parametric cut
 *************************************************************************/
 {
 	/* initialize problem for LAMBDA_LOW */
-	initializeProblem(lowProblem, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper, LAMBDA_LOW);
+    uint all_sink[numNodesSuper];
+    uint all_source[numNodesSuper];
 
+    for (uint i = 0; i < numNodesSuper; i++)
+    {
+        all_sink[i] = 0;
+        all_source[i] = 1;
+    }
+
+    initializeContractedProblem(lowProblem, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,LAMBDA_LOW, all_sink, all_source);
 
 	if (useParametricCut == 1)
 	{
 		/* initialize problem for LAMBDA_HIGH */
-		initializeProblem(highProblem, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper, LAMBDA_HIGH);
+		initializeContractedProblem(highProblem, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,LAMBDA_HIGH, all_sink, all_source);
 	}
 }
 
@@ -1945,6 +1878,7 @@ solveProblem - solves a single instance of cut problem
 			}
 		}
 
+        problem->solved =1;
 		return;
 	}
 
@@ -2047,6 +1981,9 @@ solveProblem - solves a single instance of cut problem
 		free(arcList);
 		arcList = NULL;
 	}
+
+    problem->solved =1;
+
 	// printCutProblem(problem);
 	freeMemorySolve();
 }
@@ -2137,16 +2074,16 @@ parametricCut - Recursive function that solves the parametric cut problem
         // printf("Intersect: %lf\n", lambdaIntersect);
 
         CutProblem minimalIntersect;
-    	initializeProblem(&minimalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect - TOL); // replaces contract
+        initializeContractedProblem(&minimalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect - TOL, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+
         solveProblem(&minimalIntersect, 0);
-        minimalIntersect.solved = 1;
         destroyProblem(&minimalIntersect, 0);
 
 		/* Create new instance of upper bound problem with contracted optimal source set from the low problem and the sink set from the optimal cut for the high problem and lambda value equal to lambda intersect. The nodes in the source set for lambdaLow are guaranteed to be in the source set for the lambda >= lambdaLow. The nodes that are in the sinkset for lambdaHigh are guaranteed to be in the sink set for lambda <= lambdaIntersect <= lambdaHigh. */
 		CutProblem maximalIntersect;
-        initializeProblem(&maximalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect + TOL); // replaces contract
+        initializeContractedProblem(&maximalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect + TOL, minimalIntersect.optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+
         solveProblem(&maximalIntersect, 1);
-        maximalIntersect.solved = 1;
         destroyProblem(&maximalIntersect, 0);
 
         // check if lambdaIntersect is a breakpoint by comparing min and max source set.
@@ -2267,12 +2204,10 @@ main - Main function
 	{
         // solve lower bound problem
         solveProblem(&lowProblem, 0);
-		lowProblem.solved = 1;
         destroyProblem(&lowProblem, 0);
 
         // solve upper bound problem
         solveProblem(&highProblem, 1);
-		highProblem.solved = 1;
         destroyProblem(&lowProblem, 0);
 
         // find breakpoints + recurse
