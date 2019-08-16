@@ -1289,37 +1289,6 @@ pseudoflowPhase1
 	}
 }
 
-static void removeDuplicateBreakpoints(void)
-/*************************************************************************
-removeDuplicateBreakpoints
-*************************************************************************/
-{
-	Breakpoint *currentBreakpoint = firstBreakpoint;
-	Breakpoint *nextBreakpoint = currentBreakpoint->next;
-
-    // printf("breakpoint: %f\n", currentBreakpoint->lambdaValue);
-	while (nextBreakpoint != NULL)
-	{
-        // printf("breakpoint: %f\n", nextBreakpoint->lambdaValue);
-		if (currentBreakpoint->lambdaValue == nextBreakpoint->lambdaValue)
-		{
-			currentBreakpoint->next = nextBreakpoint->next;
-			nextBreakpoint->next = NULL;
-			destroyBreakpoint(nextBreakpoint);
-		}
-		currentBreakpoint = currentBreakpoint->next;
-		// it may be that current breakpoint is null if there is one set of duplicate breakpoints
-		if (currentBreakpoint != NULL)
-		{
-			nextBreakpoint = currentBreakpoint->next;
-		}
-		else
-		{
-			nextBreakpoint = NULL;
-		}
-	}
-}
-
 static void prepareOutput (int * numBreakpoints, int ** cuts, double ** breakpoints, int stats[5] )
 {
 /*************************************************************************
@@ -2315,7 +2284,6 @@ main - Main function
 		/* deallocate memory */
 		destroyProblem(&lowProblem);
 		destroyProblem(&highProblem);
-		removeDuplicateBreakpoints();
 	}
 	else
 	{
