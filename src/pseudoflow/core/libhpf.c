@@ -1416,28 +1416,6 @@ copyArcAdd - update arc by adding another
     new->capacity +=  additional_capacity;
 }
 
-static void evaluateCapacities(CutProblem* problem)
-/*************************************************************************
-evaluateCapacities - Evaluate capacities for a particular value of capacities
-*************************************************************************/
-{
-	uint i;
-	for (i = 0; i < problem->numArcs; i++)
-	{
-		problem->arcList[i].capacity = problem->arcList[i].constant + problem->arcList[i].multiplier * problem->lambdaValue;
-		if (problem->arcList[i].capacity < 0)
-		{
-			if (roundNegativeCapacity == 1 ||  problem->arcList[i].capacity > - TOL)
-				problem->arcList[i].capacity = 0;
-			else
-			{
-				printf("Negative capacity for lambda equal to %f. Set roundNegativeCapacity to 1 if the value should be rounded to 0.\n",problem->lambdaValue);
-				exit(0);
-			}
-		}
-	}
-}
-
 static void destroyProblem(CutProblem *problem, int destroySourceSetIndicator)
 /*************************************************************************
 destroyProblem - Destruct function for CutProblem struct
