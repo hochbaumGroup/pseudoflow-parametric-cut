@@ -81,8 +81,6 @@ def test_hpf_with_parametric_sink_arcs():
         roundNegativeCapacity=True,
     )
 
-    print(breakpoints)
-    print(cuts)
     assert breakpoints == pytest.approx([0.45, 0.55, 1.0, 1.0001])
     assert cuts == {
         "s": [1, 1, 1, 1],
