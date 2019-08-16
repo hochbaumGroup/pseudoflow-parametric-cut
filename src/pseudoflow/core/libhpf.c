@@ -2064,6 +2064,7 @@ parametricCut - Recursive function that solves the parametric cut problem
         uint *pdifference;
         differenceSourceSets(&pdifference, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
 
+        // find intersection using method outlined in Hochbaum 2003 on inverse spanning-tree.
         double Klow = internalCutCapacity(lowProblem->optimalSourceSetIndicator);
         double Khigh = internalCutCapacity(highProblem->optimalSourceSetIndicator);
         double K12 = Klow - Khigh;
@@ -2073,13 +2074,14 @@ parametricCut - Recursive function that solves the parametric cut problem
 
         // printf("Intersect: %lf\n", lambdaIntersect);
 
+        // find minimal and maximal source set at lambdaIntersect.
+        // Add/subtract TOL to prevent numerical issues.
         CutProblem minimalIntersect;
         initializeContractedProblem(&minimalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect - TOL, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
 
         solveProblem(&minimalIntersect, 0);
         destroyProblem(&minimalIntersect, 0);
 
-		/* Create new instance of upper bound problem with contracted optimal source set from the low problem and the sink set from the optimal cut for the high problem and lambda value equal to lambda intersect. The nodes in the source set for lambdaLow are guaranteed to be in the source set for the lambda >= lambdaLow. The nodes that are in the sinkset for lambdaHigh are guaranteed to be in the sink set for lambda <= lambdaIntersect <= lambdaHigh. */
 		CutProblem maximalIntersect;
         initializeContractedProblem(&maximalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect + TOL, minimalIntersect.optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
 
