@@ -1404,7 +1404,7 @@ evaluateCapacities - Evaluate capacities for a particular value of capacities
 	}
 }
 
-static void destroyProblem(CutProblem *problem)
+static void destroyProblem(CutProblem *problem, int destroySourceSetIndicator)
 /*************************************************************************
 destroyProblem - Destruct function for CutProblem struct
 *************************************************************************/
@@ -1417,8 +1417,11 @@ destroyProblem - Destruct function for CutProblem struct
 	problem->nodeList = NULL;
 	free(problem->arcList);
 	problem->arcList = NULL;
-	free(problem->optimalSourceSetIndicator);
-	problem->optimalSourceSetIndicator = NULL;
+    if (destroySourceSetIndicator)
+    {
+        free(problem->optimalSourceSetIndicator);
+        problem->optimalSourceSetIndicator = NULL;
+    }
 }
 
 
@@ -2113,6 +2116,7 @@ parametricCut - Recursive function that solves the parametric cut problem
 	{
 		solveProblem(lowProblem, 0);
 		lowProblem->solved = 1;
+        destroyProblem(lowProblem, 0);
 	}
 
 
@@ -2121,6 +2125,7 @@ parametricCut - Recursive function that solves the parametric cut problem
 	{
 		solveProblem(highProblem, 1);
 		highProblem->solved = 1;
+        destroyProblem(lowProblem, 0);
 	}
 
     uint *pdifference_low_high;
@@ -2148,12 +2153,14 @@ parametricCut - Recursive function that solves the parametric cut problem
     	initializeProblem(&minimalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect - TOL); // replaces contract
         solveProblem(&minimalIntersect, 0);
         minimalIntersect.solved = 1;
+        destroyProblem(&minimalIntersect, 0);
 
 		/* Create new instance of upper bound problem with contracted optimal source set from the low problem and the sink set from the optimal cut for the high problem and lambda value equal to lambda intersect. The nodes in the source set for lambdaLow are guaranteed to be in the source set for the lambda >= lambdaLow. The nodes that are in the sinkset for lambdaHigh are guaranteed to be in the sink set for lambda <= lambdaIntersect <= lambdaHigh. */
 		CutProblem maximalIntersect;
         initializeProblem(&maximalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect + TOL); // replaces contract
         solveProblem(&maximalIntersect, 1);
         maximalIntersect.solved = 1;
+        destroyProblem(&maximalIntersect, 0);
 
         // check if lambdaIntersect is a breakpoint by comparing min and max source set.
         uint *pdifference_min_max_intersect;
@@ -2180,8 +2187,8 @@ parametricCut - Recursive function that solves the parametric cut problem
         }
 
         /* call destructor function */
-        destroyProblem(&minimalIntersect);
-        destroyProblem(&maximalIntersect);
+        destroyProblem(&minimalIntersect, 1);
+        destroyProblem(&maximalIntersect, 1);
 
 	}
     else
@@ -2282,8 +2289,8 @@ main - Main function
 	{
 		parametricCut(&lowProblem, &highProblem);
 		/* deallocate memory */
-		destroyProblem(&lowProblem);
-		destroyProblem(&highProblem);
+		destroyProblem(&lowProblem, 1);
+		destroyProblem(&highProblem, 1);
 	}
 	else
 	{
@@ -2291,7 +2298,7 @@ main - Main function
 		/* add solution as breakpoint */
 		addBreakpoint(lowProblem.lambdaValue, lowProblem.optimalSourceSetIndicator);
 		/* deallocate memory */
-		destroyProblem(&lowProblem);
+		destroyProblem(&lowProblem, 1);
 	}
 	solveEnd = clock();
 
