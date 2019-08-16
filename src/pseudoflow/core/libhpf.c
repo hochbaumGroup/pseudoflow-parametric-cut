@@ -159,8 +159,6 @@ typedef struct CutProblem
 	Arc *arcList;
 	Node *nodeList;
 	double cutValue;
-	double cutMultiplier;
-	double cutConstant;
 	Node *sourceSet;
 	Node *sinkSet;
 	uint *optimalSourceSetIndicator;
@@ -486,8 +484,6 @@ static void printCutProblem(CutProblem *p){
   //printArcListInfo(arcList);
   //printNodeListInfo(nodeList);
   printf("%.12lf " ,p->cutValue);
-  printf("%.12lf " ,p->cutMultiplier);
-  printf("%.12lf " ,p->cutConstant);
   //printNodeListInfo(sourceSet);
   //printSinkListInfo(sinkSet);
   for(i=0;i<numNodesSuper;++i){
@@ -1468,8 +1464,6 @@ initializeProblem - Setup problems for parametric cut
 
 	/* set cut parameters */
 	problem->cutValue = 0;
-	problem->cutMultiplier = 0;
-	problem->cutConstant = 0;
 
 	/* set solved indicator */
 	problem->solved = 0;
@@ -1925,8 +1919,6 @@ evaluateCut - Evaluates optimal cut parameters for a given problem
 		if ((originalIndexFrom == -1 || problem->optimalSourceSetIndicator[originalIndexFrom] == 1) && (originalIndexTo == -2 || problem->optimalSourceSetIndicator[originalIndexTo] == 0 ) )
 		{
 		  problem->cutValue += problem->arcList[i].capacity;
-		  problem->cutMultiplier += problem->arcList[i].multiplier;
-		  problem->cutConstant += problem->arcList[i].constant;
 		}
 	}
 }
@@ -1943,8 +1935,6 @@ solveProblem - solves a single instance of cut problem
 	nodesList = problem->nodeList;
 	numNodes = problem->numNodesInList;
 	numArcs = problem->numArcs;
-	problem->cutMultiplier = 0.0;
-	problem->cutConstant = 0.0;
 	problem->cutValue = 0.0;
 	// handle empty problems
 	if (numNodes == 2)
@@ -1971,8 +1961,6 @@ solveProblem - solves a single instance of cut problem
 		{
 			if (problem->arcList[i].from->originalIndex == -1 && problem->arcList[i].to->originalIndex == -2)
 			{
-				problem->cutConstant += problem->arcList[i].constant;
-				problem->cutMultiplier += problem->arcList[i].multiplier;
 				problem->cutValue += problem->arcList[i].capacity;
 			}
 		}
