@@ -1671,16 +1671,25 @@ static void initializeParametricCut(CutProblem *lowProblem, CutProblem *highProb
 initializeParametricCut - Set up data structures for parametric cut
 *************************************************************************/
 {
-	/* initialize problem for LAMBDA_LOW */
-    uint all_sink[numNodesSuper];
-    uint all_source[numNodesSuper];
-
+    uint *all_source, *all_sink;
+	// disable contraction by passing dummy low/high problem solutions.
+    if ((all_sink = (uint *)malloc(numNodesSuper *  sizeof(uint))) == NULL)
+	{
+		printf("Out of memory\n");
+		exit(0);
+	}
+	if ((all_source = (uint *)malloc(numNodesSuper  *sizeof(uint))) == NULL )
+	{
+		printf("Out of memory\n");
+		exit(0);
+	}
     for (uint i = 0; i < numNodesSuper; i++)
     {
         all_sink[i] = 0;
         all_source[i] = 1;
     }
 
+    /* initialize problem for LAMBDA_LOW */
     initializeContractedProblem(lowProblem, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,LAMBDA_LOW, all_sink, all_source);
 
 	if (useParametricCut == 1)
@@ -1688,6 +1697,9 @@ initializeParametricCut - Set up data structures for parametric cut
 		/* initialize problem for LAMBDA_HIGH */
 		initializeContractedProblem(highProblem, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,LAMBDA_HIGH, all_sink, all_source);
 	}
+
+    free(all_sink);
+    free(all_source);
 }
 
 static void addBreakpoint(double lambdaValue, uint *sourceSetIndicator)
