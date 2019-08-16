@@ -2067,7 +2067,7 @@ solveProblem - solves a single instance of cut problem
 		free(arcList);
 		arcList = NULL;
 	}
-	printCutProblem(problem);
+	// printCutProblem(problem);
 	freeMemorySolve();
 }
 
