@@ -2038,17 +2038,13 @@ parametricCut - Recursive function that solves the parametric cut problem
 	/* find lambda value for which the optimal cut functions(expressed as a function of lambda) for the lower bound and upper bound problem intersect. */
 	if (num_nodes_different_low_high > 0)
 	{
-        // Compute S_high - S_low
-        uint *pdifference;
-        differenceSourceSets(&pdifference, lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
-
         // find intersection using method outlined in Hochbaum 2003 on inverse spanning-tree.
         double Klow = internalCutCapacity(lowProblem->optimalSourceSetIndicator);
         double Khigh = internalCutCapacity(highProblem->optimalSourceSetIndicator);
         double K12 = Klow - Khigh;
         // printf("K low: %lf, high; %lf, diff: %lf\n", Klow, Khigh, K12);
 
-        double lambdaIntersect = computeIntersect(pdifference, K12);
+        double lambdaIntersect = computeIntersect(pdifference_low_high, K12);
 
         // printf("Intersect: %lf\n", lambdaIntersect);
 
