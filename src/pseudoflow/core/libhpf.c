@@ -469,27 +469,33 @@ pushDownward
 }
 
 static void printCutProblem(CutProblem *p){
-  printf("numNodes: %u\n " ,p->numNodesInList);
-  printf("numSource %u\n" ,p->numSourceSet);
-  printf("numSink: %u\n" ,p->numSinkSet);
-  printf("numArcs: %u\n" ,p->numArcs);
-  printf("solved: %u\n" ,p->solved);
-  printf("lambda:%.12lf\n" ,p->lambdaValue);
-  int i;
-  printf("[from, to](capacity,constant,multiplier)\n");
-  for(i=0;i<numArcs;++i){
-    printf("[%d,%d](%.12lf,%.12lf,%.12lf)\n",p->arcList[i].from->originalIndex,p->arcList[i].to->originalIndex,p->arcList[i].capacity,p->arcList[i].constant,p->arcList[i].multiplier);
-  }
-  printf("\n");
-  //printArcListInfo(arcList);
-  //printNodeListInfo(nodeList);
-  printf("%.12lf " ,p->cutValue);
-  //printNodeListInfo(sourceSet);
-  //printSinkListInfo(sinkSet);
-  for(i=0;i<numNodesSuper;++i){
-    printf("%u ",p->optimalSourceSetIndicator[i]);
-  }
-  printf("\n");
+    printf("numNodes: %u\n " ,p->numNodesInList);
+    printf("numSource %u\n" ,p->numSourceSet);
+    printf("numSink: %u\n" ,p->numSinkSet);
+    printf("numArcs: %u\n" ,p->numArcs);
+    printf("solved: %u\n" ,p->solved);
+    printf("lambda:%.12lf\n" ,p->lambdaValue);
+    int i;
+    printf("[from, to](capacity,constant,multiplier)\n");
+    for(i=0;i<p->numArcs;++i)
+    {
+        printf("[%d,%d](%.12lf,%.12lf,%.12lf)\n",p->arcList[i].from->originalIndex,p->arcList[i].to->originalIndex,p->arcList[i].capacity,p->arcList[i].constant,p->arcList[i].multiplier);
+    }
+    printf("\n");
+    //printArcListInfo(arcList);
+    //printNodeListInfo(nodeList);
+    printf("%.12lf " ,p->cutValue);
+    // printNodeListInfo(sourceSet);
+    // printSinkListInfo(sinkSet);
+    if (p->solved == 1)
+    {
+        for(i=0;i<numNodesSuper;++i)
+        {
+            printf("%u ",p->optimalSourceSetIndicator[i]);
+        }
+    }
+    printf("\n");
+    printf("\n");
 }
 
 static void pushExcess (Node *strongRoot)
