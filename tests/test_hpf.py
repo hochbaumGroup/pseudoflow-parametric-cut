@@ -259,3 +259,120 @@ def test_problem1():
     )
     assert breakpoints == pytest.approx(expected_breakpoints)
     assert cuts == expected_cuts
+
+
+def test_problem_seg_fault():
+    # only testing for completion.
+
+    is_training_dict = {
+        0: False,
+        1: False,
+        2: True,
+        3: False,
+        4: False,
+        5: False,
+        6: True,
+        7: True,
+        8: False,
+        9: True,
+    }
+    training_label = {
+        0: 0.1,
+        1: 0.4,
+        2: 0.94,
+        3: 0.09,
+        4: 0.93,
+        5: 0.47,
+        6: 0.45,
+        7: 0.44,
+        8: 0.27,
+        9: 0.14,
+    }
+
+    arc_weights = {
+        (0, 2): 0.345,
+        (0, 3): 0.065,
+        (0, 4): 0.155,
+        (0, 7): 0.13,
+        (0, 8): 0.08,
+        (1, 0): 0.335,
+        (1, 2): 0.255,
+        (1, 3): 0.455,
+        (1, 5): 0.065,
+        (1, 6): 0.22,
+        (1, 7): 0.255,
+        (1, 9): 0.495,
+        (2, 0): 0.18,
+        (2, 4): 0.035,
+        (2, 6): 0.36,
+        (2, 8): 0.14,
+        (2, 9): 0.24,
+        (3, 1): 0.465,
+        (3, 2): 0.49,
+        (3, 4): 0.28,
+        (3, 6): 0.265,
+        (3, 7): 0.19,
+        (3, 9): 0.37,
+        (4, 0): 0.485,
+        (4, 2): 0.045,
+        (4, 7): 0.27,
+        (4, 8): 0.29,
+        (5, 0): 0.22,
+        (5, 4): 0.17,
+        (5, 7): 0.15,
+        (6, 0): 0.23,
+        (6, 2): 0.195,
+        (6, 3): 0.175,
+        (6, 4): 0.44,
+        (6, 5): 0.48,
+        (6, 7): 0.2,
+        (6, 8): 0.065,
+        (7, 0): 0.19,
+        (7, 4): 0.35,
+        (7, 5): 0.39,
+        (7, 8): 0.225,
+        (8, 1): 0.39,
+        (8, 3): 0.34,
+        (8, 4): 0.33,
+        (8, 5): 0.21,
+        (8, 6): 0.215,
+        (8, 9): 0.035,
+        (9, 1): 0.16,
+        (9, 4): 0.07,
+        (9, 5): 0.065,
+        (9, 7): 0.11,
+    }
+
+    num_deviation = sum(is_training_dict.values())
+    sum_arc_weights = sum(arc_weights.values())
+
+    G = nx.DiGraph()
+
+    for node, is_training in is_training_dict.items():
+        if is_training:
+            constant = 2 * training_label[node]
+            G.add_edge(
+                "s",
+                node,
+                constant=-constant / num_deviation,
+                multiplier=2 / num_deviation,
+            )
+            G.add_edge(
+                node,
+                "t",
+                constant=constant / num_deviation,
+                multiplier=-2 / num_deviation,
+            )
+
+    for (from_node, to_node), weight in arc_weights.items():
+        G.add_edge(from_node, to_node, constant=weight / sum_arc_weights, multiplier=0)
+
+    breakpoints, cuts, _ = hpf(
+        G,
+        "s",
+        "t",
+        const_cap="constant",
+        mult_cap="multiplier",
+        lambdaRange=[0.000, 1.0001],
+        roundNegativeCapacity=True,
+    )
