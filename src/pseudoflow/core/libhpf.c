@@ -1839,6 +1839,12 @@ solveProblem - solves a single instance of cut problem
 	numNodes = problem->numNodesInList;
 	numArcs = problem->numArcs;
 	problem->cutValue = 0.0;
+
+    // reset some globals
+    highestStrongLabel = 1;
+	lowestPositiveExcessNode = 0;
+
+
 	// handle empty problems
 	if (numNodes == 2)
 	{
