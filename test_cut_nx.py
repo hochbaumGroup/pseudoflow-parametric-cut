@@ -69,21 +69,6 @@ arc_weights = {
     (9, 8): 0.16,
 }
 
-expected_breakpoints = [0.375049807267, 0.532261662979, 0.644850603945, 1.0001]
-expected_cuts = {
-    "s": [1, 1, 1, 1],
-    "t": [0, 0, 0, 0],
-    0: [0, 1, 1, 1],
-    1: [0, 1, 1, 1],
-    2: [0, 1, 1, 1],
-    3: [0, 0, 0, 1],
-    4: [0, 1, 1, 1],
-    5: [0, 1, 1, 1],
-    6: [0, 1, 1, 1],
-    7: [0, 1, 1, 1],
-    8: [0, 0, 0, 1],
-    9: [0, 0, 1, 1],
-}
 
 num_deviation = sum(is_training_dict.values())
 sum_arc_weights = sum(arc_weights.values())
@@ -93,12 +78,12 @@ G = nx.DiGraph()
 
 for node, is_training in is_training_dict.items():
     if is_training:
-        weight = (2 * lambda_value - 2 * training_label[node]) / num_deviation
+        weight = 2 * (lambda_value - training_label[node]) / num_deviation
         G.add_edge("s", node, weight=max(weight, 0))
         G.add_edge(node, "t", weight=max(-weight, 0))
 
 for (from_node, to_node), weight in arc_weights.items():
-    G.add_edge(from_node, to_node, constant=weight / sum_arc_weights, multiplier=0)
+    G.add_edge(from_node, to_node, weight=weight / sum_arc_weights)
 
 cut_value, partition = nx.minimum_cut(G, "s", "t", capacity="weight")
 reachable, non_reachable = partition
