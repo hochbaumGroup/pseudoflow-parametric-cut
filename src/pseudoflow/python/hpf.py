@@ -12,7 +12,7 @@ def _c_arr(c_type, size, init):
     return x(*init)
 
 
-def _get_arcmatrix(G, const_cap, mult_cap):
+def _get_arcmatrix(G, const_cap, mult_cap, source, sink):
     nNodes = G.number_of_nodes()
     nArcs = G.number_of_edges()
 
@@ -20,11 +20,16 @@ def _get_arcmatrix(G, const_cap, mult_cap):
     nodeDict = {}
     linearArcMatrix = []
 
-    for i, node in zip(xrange(nNodes), G.nodes()):
-        nodeDict[node] = i
-        nodeNames.append(node)
+    nodeDict[source] = 0
+    nodeNames = [source]
 
-    # print(nodeNames)
+    for node in G.nodes():
+        if node not in {source, sink}:
+            nodeDict[node] = len(nodeNames)
+            nodeNames.append(node)
+
+    nodeDict[sink] = len(nodeNames)
+    nodeNames.append(sink)
 
     for fromNode, toNode, data in G.edges(data=True):
         linearArcMatrix += [
@@ -159,7 +164,9 @@ def hpf(
         parametric = False
         lambdaRange = [0.0, 0.0]
 
-    nodeNames, nodeDict, arcMatrix = _get_arcmatrix(G, const_cap, mult_cap)
+    nodeNames, nodeDict, arcMatrix = _get_arcmatrix(
+        G, const_cap, mult_cap, source, sink
+    )
 
     c_input = _create_c_input(
         G, nodeDict, source, sink, arcMatrix, lambdaRange, roundNegativeCapacity
