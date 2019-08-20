@@ -2077,7 +2077,7 @@ parametricCut - Recursive function that solves the parametric cut problem
 		CutProblem maximalIntersect;
         initializeContractedProblem(&maximalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,lambdaIntersect + TOL, minimalIntersect.optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
 
-        solveProblem(&maximalIntersect, 1);
+        solveProblem(&maximalIntersect, 0);
         destroyProblem(&maximalIntersect, 0);
 
         // check if lambdaIntersect is a breakpoint by comparing min and max source set.
