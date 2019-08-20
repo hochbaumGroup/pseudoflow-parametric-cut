@@ -494,6 +494,7 @@ static void printCutProblem(CutProblem *p){
             printf("%u ",p->optimalSourceSetIndicator[i]);
         }
     }
+    printf("SourceSuper: %d, SinkSuper: %d\n", sourceSuper, sinkSuper);
     printf("\n");
     printf("\n");
 }
