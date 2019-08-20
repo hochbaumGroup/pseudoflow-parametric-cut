@@ -208,20 +208,20 @@ def test_problem1():
         (9, 8): 0.16,
     }
 
-    expected_breakpoints = [0.375049807267, 0.532261662979, 0.644850603945, 1.0001]
+    expected_breakpoints = [0.375049807267, 0.644850603945, 1.0001]
     expected_cuts = {
-        "s": [1, 1, 1, 1],
-        "t": [0, 0, 0, 0],
-        0: [0, 1, 1, 1],
-        1: [0, 1, 1, 1],
-        2: [0, 1, 1, 1],
-        3: [0, 0, 0, 1],
-        4: [0, 1, 1, 1],
-        5: [0, 1, 1, 1],
-        6: [0, 1, 1, 1],
-        7: [0, 1, 1, 1],
-        8: [0, 0, 0, 1],
-        9: [0, 0, 1, 1],
+        "s": [1, 1, 1],
+        "t": [0, 0, 0],
+        0: [0, 1, 1],
+        1: [0, 1, 1],
+        2: [0, 1, 1],
+        3: [0, 0, 1],
+        4: [0, 1, 1],
+        5: [0, 1, 1],
+        6: [0, 1, 1],
+        7: [0, 1, 1],
+        8: [0, 0, 1],
+        9: [0, 0, 1],
     }
 
     num_deviation = sum(is_training_dict.values())
@@ -258,6 +258,132 @@ def test_problem1():
         roundNegativeCapacity=True,
     )
     assert breakpoints == pytest.approx(expected_breakpoints)
+    assert cuts == expected_cuts
+
+
+def test_problem2():
+    is_training_dict = {
+        0: True,
+        1: True,
+        2: True,
+        3: False,
+        4: True,
+        5: False,
+        6: False,
+        7: False,
+        8: False,
+        9: False,
+    }
+    training_label = {
+        0: 0.76,
+        1: 0.89,
+        2: 0.18,
+        3: 0.05,
+        4: 0.0,
+        5: 0.35,
+        6: 0.44,
+        7: 0.63,
+        8: 0.77,
+        9: 0.92,
+    }
+
+    arc_weights = {
+        (0, 1): 0.185,
+        (0, 2): 0.38,
+        (0, 4): 0.49,
+        (0, 5): 0.245,
+        (0, 7): 0.25,
+        (0, 8): 0.465,
+        (1, 0): 0.115,
+        (1, 2): 0.41,
+        (1, 3): 0.005,
+        (1, 5): 0.37,
+        (1, 7): 0.08,
+        (2, 1): 0.33,
+        (2, 3): 0.07,
+        (2, 7): 0.23,
+        (3, 0): 0.485,
+        (3, 1): 0.17,
+        (3, 2): 0.23,
+        (3, 4): 0.435,
+        (3, 6): 0.215,
+        (3, 7): 0.18,
+        (4, 2): 0.205,
+        (4, 5): 0.275,
+        (4, 6): 0.295,
+        (5, 2): 0.265,
+        (5, 4): 0.085,
+        (5, 6): 0.015,
+        (6, 2): 0.21,
+        (6, 3): 0.49,
+        (6, 4): 0.05,
+        (6, 5): 0.355,
+        (6, 7): 0.055,
+        (7, 0): 0.185,
+        (7, 3): 0.195,
+        (7, 4): 0.28,
+        (7, 5): 0.195,
+        (7, 6): 0.025,
+        (7, 8): 0.475,
+        (8, 0): 0.31,
+        (8, 3): 0.14,
+        (9, 2): 0.12,
+        (9, 3): 0.16,
+        (9, 4): 0.38,
+        (9, 6): 0.005,
+        (9, 7): 0.26,
+    }
+
+    expected_breakpoints = [0.149469, 0.211822, 0.710819, 0.757888, 1.0001]
+    expected_cuts = {
+        "s": [1, 1, 1, 1, 1],
+        "t": [0, 0, 0, 0, 0],
+        0: [0, 0, 0, 1, 1],
+        1: [0, 0, 0, 0, 1],
+        2: [0, 0, 1, 1, 1],
+        3: [0, 0, 0, 1, 1],
+        4: [0, 1, 1, 1, 1],
+        5: [0, 0, 1, 1, 1],
+        6: [0, 0, 0, 1, 1],
+        7: [0, 0, 0, 1, 1],
+        8: [0, 0, 0, 1, 1],
+        9: [0, 0, 0, 0, 1],
+    }
+
+    num_deviation = sum(is_training_dict.values())
+    sum_arc_weights = sum(arc_weights.values())
+
+    G = nx.DiGraph()
+
+    for node, is_training in is_training_dict.items():
+        if is_training:
+            constant = 2 * training_label[node]
+            G.add_edge(
+                "s",
+                node,
+                constant=-constant / num_deviation,
+                multiplier=2 / num_deviation,
+            )
+            G.add_edge(
+                node,
+                "t",
+                constant=constant / num_deviation,
+                multiplier=-2 / num_deviation,
+            )
+
+    for (from_node, to_node), weight in arc_weights.items():
+        G.add_edge(from_node, to_node, constant=weight / sum_arc_weights, multiplier=0)
+
+    breakpoints, cuts, _ = hpf(
+        G,
+        "s",
+        "t",
+        const_cap="constant",
+        mult_cap="multiplier",
+        lambdaRange=[0.000, 1.0001],
+        roundNegativeCapacity=True,
+    )
+    assert breakpoints == pytest.approx(expected_breakpoints, abs=1e-5)
     assert cuts == expected_cuts
 
 
