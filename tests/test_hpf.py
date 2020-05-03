@@ -502,3 +502,30 @@ def test_problem_seg_fault():
         lambdaRange=[0.000, 1.0001],
         roundNegativeCapacity=True,
     )
+
+def test_segfault2():
+    G = nx.DiGraph()
+    G.add_nodes_from(['source', 'sink', 0, 1, 2])
+
+    G.add_edge(0, 1, weight=float('inf'), multiplier=0)
+    G.add_edge(0, 2, weight=float('inf'), multiplier=0)
+    G.add_edge(1, 2, weight=float('inf'), multiplier=0)
+
+    G.add_edge(0, 'sink', weight=3, multiplier=0)
+    G.add_edge('source', 1, weight=6, multiplier=0)
+    G.add_edge(2, 'sink', weight=4, multiplier=2)
+
+    breakpoints, cuts, _ = hpf(
+        G,
+        "source",
+        "sink",
+        const_cap="weight",
+        mult_cap="multiplier",
+        lambdaRange=[0, 5],
+        roundNegativeCapacity=False,
+    )
+
+    assert breakpoints == [1, 5.0]
+    assert len(cuts) == 2
+    assert cuts[0] == {'source': 1, 'sink': 0, 0: 0, 1: 1, 2: 1}
+    assert cuts[0] == {'source': 1, 'sink': 0, 0: 0, 1: 0, 2: 0}
