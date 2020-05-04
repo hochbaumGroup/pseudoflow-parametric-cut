@@ -2,7 +2,6 @@ from ctypes import c_int, c_double, cast, byref, POINTER, cdll
 from six.moves import xrange
 import os
 
-
 PATH = os.path.dirname(__file__)
 libhpf = cdll.LoadLibrary(os.path.join(PATH, os.pardir, "libhpf.so"))
 
@@ -123,6 +122,15 @@ def _cleanup(c_output):
     libhpf.libfree(c_output["breakpoints"])
     libhpf.libfree(c_output["cuts"])
 
+def _check_multipliers_sink_adjacent_negative(G, sink, mult_cap):
+    for u in G.predecessors(sink):
+        if G[u][sink][mult_cap] > 0:
+            raise ValueError('Sink adjacent arcs should have non-positive multipliers. Arc (%s, %s = sink) has a multiplier of %f. Please reverse graph.' % (u, sink, G[u][sink][mult_cap]))
+
+def _check_multipliers_source_adjacent_positive(G, source, mult_cap):
+    for v in G.successors(source):
+        if G[source][v][mult_cap] < 0:
+            raise ValueError('Source adjacent arcs should have non-negative multipliers. Arc (%s = source, %s) has a multiplier of %f. Please reverse graph.' % (source, v, G[source][v][mult_cap]))
 
 def _read_output(c_output, nodeNames):
     numBreakpoints = c_output["numBreakpoints"].value
@@ -160,6 +168,8 @@ def hpf(
 
     if mult_cap:
         parametric = True
+        _check_multipliers_sink_adjacent_negative(G, sink, mult_cap)
+        _check_multipliers_source_adjacent_positive(G, source, mult_cap)
     else:
         parametric = False
         lambdaRange = [0.0, 0.0]
