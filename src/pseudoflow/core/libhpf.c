@@ -2202,7 +2202,7 @@ main - Main function
         destroyProblem(&lowProblem, 0);
 
         // solve upper bound problem
-        solveProblem(&highProblem, 1);
+        solveProblem(&highProblem, 0);
         destroyProblem(&lowProblem, 0);
 
         // find breakpoints + recurse
