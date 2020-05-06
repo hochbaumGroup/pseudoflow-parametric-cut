@@ -503,10 +503,14 @@ static void printCutProblem(CutProblem *p){
     // printSinkListInfo(sinkSet);
     if (p->solved == 1)
     {
+				int sourcenodes = 0;
         for(i=0;i<numNodesSuper;++i)
         {
+					sourcenodes += p->optimalSourceSetIndicator[i];
             printf("%u ",p->optimalSourceSetIndicator[i]);
         }
+				printf("\n");
+				printf("Nodes in source set: %d\n", sourcenodes);
     }
     printf("SourceSuper: %d, SinkSuper: %d\n", sourceSuper, sinkSuper);
     printf("\n");
