@@ -17,6 +17,7 @@ def G():
 
     return G
 
+
 #
 def test_hpf_nonparametric(G):
     source = 0
@@ -503,20 +504,21 @@ def test_problem_seg_fault():
         roundNegativeCapacity=True,
     )
 
+
 def test_sink_adjacent_arcs_with_positive_multiplier_raises_valueerror():
     G = nx.DiGraph()
-    G.add_nodes_from(['source', 'sink', 0, 1, 2])
+    G.add_nodes_from(["source", "sink", 0, 1, 2])
 
-    G.add_edge(0, 1, weight=float('inf'), multiplier=0)
-    G.add_edge(0, 2, weight=float('inf'), multiplier=0)
-    G.add_edge(1, 2, weight=float('inf'), multiplier=0)
+    G.add_edge(0, 1, weight=float("inf"), multiplier=0)
+    G.add_edge(0, 2, weight=float("inf"), multiplier=0)
+    G.add_edge(1, 2, weight=float("inf"), multiplier=0)
 
-    G.add_edge(0, 'sink', weight=3, multiplier=0)
-    G.add_edge('source', 1, weight=6, multiplier=0)
-    G.add_edge(2, 'sink', weight=4, multiplier=2)
+    G.add_edge(0, "sink", weight=3, multiplier=0)
+    G.add_edge("source", 1, weight=6, multiplier=0)
+    G.add_edge(2, "sink", weight=4, multiplier=2)
 
     with pytest.raises(ValueError):
-         hpf(
+        hpf(
             G,
             "source",
             "sink",
@@ -526,25 +528,26 @@ def test_sink_adjacent_arcs_with_positive_multiplier_raises_valueerror():
             roundNegativeCapacity=False,
         )
 
+
 def test_source_adjacent_arcs_with_negative_multiplier_raises_valueerror():
     G = nx.DiGraph()
-    G.add_nodes_from(['source', 'sink', 0, 1, 2])
+    G.add_nodes_from(["source", "sink", 0, 1, 2])
 
-    G.add_edge(0, 1, weight=float('inf'), multiplier=0)
-    G.add_edge(0, 2, weight=float('inf'), multiplier=0)
-    G.add_edge(1, 2, weight=float('inf'), multiplier=0)
+    G.add_edge(0, 1, weight=float("inf"), multiplier=0)
+    G.add_edge(0, 2, weight=float("inf"), multiplier=0)
+    G.add_edge(1, 2, weight=float("inf"), multiplier=0)
 
-    G.add_edge(0, 'sink', weight=3, multiplier=0)
-    G.add_edge('source', 1, weight=6, multiplier=-2)
-    G.add_edge(2, 'sink', weight=4, multiplier=0)
+    G.add_edge(0, "sink", weight=3, multiplier=0)
+    G.add_edge("source", 1, weight=6, multiplier=-2)
+    G.add_edge(2, "sink", weight=4, multiplier=0)
 
     with pytest.raises(ValueError):
         hpf(
-        G,
-        "source",
-        "sink",
-        const_cap="weight",
-        mult_cap="multiplier",
-        lambdaRange=[0, 5],
-        roundNegativeCapacity=False,
+            G,
+            "source",
+            "sink",
+            const_cap="weight",
+            mult_cap="multiplier",
+            lambdaRange=[0, 5],
+            roundNegativeCapacity=False,
         )
