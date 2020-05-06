@@ -4,8 +4,8 @@ python:
 cache:
   pip: true
 install:
-  - pip install -r requirements.txt
-  - pip install .
+- pip install pipenv
+- pipenv install --dev
 script:
   - pycodestyle src/ tests/
   - pytest
