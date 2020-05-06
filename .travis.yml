@@ -7,5 +7,4 @@ install:
     - pip install pipenv
     - pipenv install --dev
 script:
-    - pycodestyle src/ tests/
     - pytest
