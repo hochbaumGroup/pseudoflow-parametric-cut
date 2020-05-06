@@ -1,11 +1,11 @@
 language: python
 python:
-  - "3.6"
+    - "3.8"
 cache:
-  pip: true
+    pip: true
 install:
-- pip install pipenv
-- pipenv install --dev
+    - pip install pipenv
+    - pipenv install --dev
 script:
-  - pycodestyle src/ tests/
-  - pytest
+    - pycodestyle src/ tests/
+    - pytest
