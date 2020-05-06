@@ -1,5 +1,5 @@
-import pytest
 import networkx as nx
+import pytest
 from pseudoflow import hpf
 
 
@@ -347,7 +347,7 @@ def test_problem2():
         6: [0, 0, 0, 1, 1],
         7: [0, 0, 0, 1, 1],
         8: [0, 0, 0, 1, 1],
-        9: [0, 0, 0, 0, 1],
+        9: [0, 0, 0, 0, 0],
     }
 
     num_deviation = sum(is_training_dict.values())
