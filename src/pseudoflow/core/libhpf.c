@@ -230,14 +230,14 @@ double dabs(double value)
 	else return -value;
 }
 
-double min(double x, double y)
+double math_min(double x, double y)
 {
 	if (x >= y)
 		return y;
 	else return x;
 }
 
-double max(double x, double y)
+double math_max(double x, double y)
 {
 	if (x >= y)
 		return x;
@@ -2087,13 +2087,13 @@ parametricCut - Recursive function that solves the parametric cut problem
         // find minimal and maximal source set at lambdaIntersect.
         // Add/subtract TOL to prevent numerical issues.
         CutProblem minimalIntersect;
-        initializeContractedProblem(&minimalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,max(lambdaIntersect - TOL, LAMBDA_LOW), lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+        initializeContractedProblem(&minimalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,math_max(lambdaIntersect - TOL, LAMBDA_LOW), lowProblem->optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
 
         solveProblem(&minimalIntersect, 0);
         destroyProblem(&minimalIntersect, 0);
 
 		CutProblem maximalIntersect;
-        initializeContractedProblem(&maximalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,min(lambdaIntersect + TOL, LAMBDA_HIGH), minimalIntersect.optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
+        initializeContractedProblem(&maximalIntersect, nodeListSuper, numNodesSuper, arcListSuper, numArcsSuper,math_min(lambdaIntersect + TOL, LAMBDA_HIGH), minimalIntersect.optimalSourceSetIndicator, highProblem->optimalSourceSetIndicator);
 
         solveProblem(&maximalIntersect, 0);
         destroyProblem(&maximalIntersect, 0);
