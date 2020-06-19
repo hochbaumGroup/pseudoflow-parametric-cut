@@ -69,7 +69,7 @@ extensions = [
 
 setup(
     name="pseudoflow",
-    version="2020.5.1",
+    version="2020.6.1",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3",
