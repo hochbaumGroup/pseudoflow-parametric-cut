@@ -12,8 +12,19 @@ def _c_arr(c_type, size, init):
 
 
 def _get_arcmatrix(G, const_cap, mult_cap, source, sink):
-    nNodes = G.number_of_nodes()
-    nArcs = G.number_of_edges()
+    
+    if 'networkx' in G.__module__:
+        nNodes = G.number_of_nodes()
+        nArcs = G.number_of_edges()
+    
+    elif 'igraph' in G.__module__:
+        nNodes = G.vcount()
+        nArcs = G.ecount()
+    
+    else:
+        raise TypeError(
+            "Graph should be networkx or igraph type. Please convert graph to one of those types."
+        )
 
     nodeNames = []
     nodeDict = {}
@@ -21,22 +32,49 @@ def _get_arcmatrix(G, const_cap, mult_cap, source, sink):
 
     nodeDict[source] = 0
     nodeNames = [source]
-
-    for node in G.nodes():
-        if node not in {source, sink}:
-            nodeDict[node] = len(nodeNames)
-            nodeNames.append(node)
+    
+    if 'networkx' in G.__module__:
+        for node in G.nodes():
+            if node not in {source, sink}:
+                nodeDict[node] = len(nodeNames)
+                nodeNames.append(node)
+    
+    elif 'igraph' in G.__module__:
+        for node in G.vs:
+            if node.index not in {source, sink}:
+                nodeDict[node.index] = len(nodeNames)
+                nodeNames.append(node.index)
+    
+    else:
+        raise TypeError(
+            "Graph should be networkx or igraph type. Please convert graph to one of those types."
+        )
 
     nodeDict[sink] = len(nodeNames)
     nodeNames.append(sink)
-
-    for fromNode, toNode, data in G.edges(data=True):
-        linearArcMatrix += [
-            nodeDict[fromNode],
-            nodeDict[toNode],
-            data[const_cap],
-            data[mult_cap] if mult_cap else 0,
-        ]
+    
+    if 'networkx' in G.__module__:
+        for fromNode, toNode, data in G.edges(data=True):
+            linearArcMatrix += [
+                nodeDict[fromNode],
+                nodeDict[toNode],
+                data[const_cap],
+                data[mult_cap] if mult_cap else 0,
+            ]
+            
+    elif 'igraph' in G.__module__:
+        for e in G.es:
+            linearArcMatrix += [
+                nodeDict[e.source],
+                nodeDict[e.target],
+                e[const_cap],
+                e[mult_cap] if mult_cap else 0,
+            ]
+    
+    else:
+        raise TypeError(
+            "Graph should be networkx or igraph type. Please convert graph to one of those types."
+        )
 
     return (nodeNames, nodeDict, map(lambda x: float(x), linearArcMatrix))
 
@@ -44,8 +82,19 @@ def _get_arcmatrix(G, const_cap, mult_cap, source, sink):
 def _create_c_input(
     G, nodeDict, source, sink, arcMatrix, lambdaRange, roundNegativeCapacity
 ):
-    nNodes = G.number_of_nodes()
-    nArcs = G.number_of_edges()
+    if 'networkx' in G.__module__:
+        nNodes = G.number_of_nodes()
+        nArcs = G.number_of_edges()
+    
+    elif 'igraph' in G.__module__:
+        nNodes = G.vcount()
+        nArcs = G.ecount()
+    
+    else:
+        raise TypeError(
+            "Graph should be networkx or igraph type. Please convert graph to one of those types."
+        )
+        
     c_numNodes = c_int(nNodes)
     c_numArcs = c_int(nArcs)
     c_source = c_int(nodeDict[source])
@@ -124,21 +173,49 @@ def _cleanup(c_output):
 
 
 def _check_multipliers_sink_adjacent_negative(G, sink, mult_cap):
-    for u in G.predecessors(sink):
-        if G[u][sink][mult_cap] > 0:
-            raise ValueError(
-                "Sink adjacent arcs should have non-positive multipliers. Arc (%s, %s = sink) has a multiplier of %f. Please reverse graph."
-                % (u, sink, G[u][sink][mult_cap])
-            )
+    if 'networkx' in G.__module__:
+        for u in G.predecessors(sink):
+            if G[u][sink][mult_cap] > 0:
+                raise ValueError(
+                    "Sink adjacent arcs should have non-positive multipliers. Arc (%s, %s = sink) has a multiplier of %f. Please reverse graph."
+                    % (u, sink, G[u][sink][mult_cap])
+                )
+        
+    elif 'igraph' in G.__module__:
+        for e in G.es:
+            if (e.target == sink) and (e['mult'] > 0):
+                raise ValueError(
+                    "Sink adjacent arcs should have non-positive multipliers. Arc (%s, %s = sink) has a multiplier of %f. Please reverse graph."
+                    % (u, sink, G[u][sink][mult_cap])
+                )
+    
+    else:
+        raise TypeError(
+            "Graph should be networkx or igraph type. Please convert graph to one of those types."
+        )
 
 
 def _check_multipliers_source_adjacent_positive(G, source, mult_cap):
-    for v in G.successors(source):
-        if G[source][v][mult_cap] < 0:
-            raise ValueError(
-                "Source adjacent arcs should have non-negative multipliers. Arc (%s = source, %s) has a multiplier of %f. Please reverse graph."
-                % (source, v, G[source][v][mult_cap])
-            )
+    if 'networkx' in G.__module__:
+        for v in G.successors(source):
+            if G[source][v][mult_cap] < 0:
+                raise ValueError(
+                    "Source adjacent arcs should have non-negative multipliers. Arc (%s = source, %s) has a multiplier of %f. Please reverse graph."
+                    % (source, v, G[source][v][mult_cap])
+                )
+        
+    elif 'igraph' in G.__module__:
+        for e in G.es:
+            if (e.target == source) and (e['mult'] < 0):
+                raise ValueError(
+                    "Source adjacent arcs should have non-negative multipliers. Arc (%s = source, %s) has a multiplier of %f. Please reverse graph."
+                    % (source, v, G[source][v][mult_cap])
+                )
+    
+    else:
+        raise TypeError(
+            "Graph should be networkx or igraph type. Please convert graph to one of those types."
+        )
 
 
 def _read_output(c_output, nodeNames):
@@ -182,6 +259,8 @@ def hpf(
     else:
         parametric = False
         lambdaRange = [0.0, 0.0]
+    
+
 
     nodeNames, nodeDict, arcMatrix = _get_arcmatrix(
         G, const_cap, mult_cap, source, sink
