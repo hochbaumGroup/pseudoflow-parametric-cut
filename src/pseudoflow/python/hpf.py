@@ -182,11 +182,11 @@ def _check_multipliers_sink_adjacent_negative(G, sink, mult_cap):
                 )
         
     elif 'igraph' in G.__module__:
-        for e in G.es:
-            if (e.target == sink) and (e['mult'] > 0):
+        for u in G.vs[sink].all_edges():
+            if u[mult_cap] > 0:
                 raise ValueError(
                     "Sink adjacent arcs should have non-positive multipliers. Arc (%s, %s = sink) has a multiplier of %f. Please reverse graph."
-                    % (u, sink, G[u][sink][mult_cap])
+                    % (u.source, sink, u[mult_cap])
                 )
     
     else:
@@ -205,13 +205,13 @@ def _check_multipliers_source_adjacent_positive(G, source, mult_cap):
                 )
         
     elif 'igraph' in G.__module__:
-        for e in G.es:
-            if (e.target == source) and (e['mult'] < 0):
+        for v in G.vs[source].all_edges():
+            if v[mult_cap] < 0:
                 raise ValueError(
                     "Source adjacent arcs should have non-negative multipliers. Arc (%s = source, %s) has a multiplier of %f. Please reverse graph."
-                    % (source, v, G[source][v][mult_cap])
+                    % (source, v.target, v[mult_cap])
                 )
-    
+        
     else:
         raise TypeError(
             "Graph should be networkx or igraph type. Please convert graph to one of those types."
