@@ -25,7 +25,7 @@ Install the package with `pip`:
 
 #### Example
 ```python
-import networkx as nx
+import networkx as nx  # igraph is also supported
 import pseudoflow
 
 G = nx.DiGraph()
@@ -38,7 +38,7 @@ sink = 2
 lambda_range = [0., 2.]
 
 breakpoints, cuts, info = pseudoflow.hpf(
-    G,  # Networkx directed graph.
+    G,  # Networkx or igraph directed graph.
     source,  # Node id of the source node.
     sink,  # Node id of the sink node.
     const_cap="const",  # Edge attribute with the constant capacity.
