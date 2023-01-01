@@ -69,7 +69,7 @@ extensions = [
 
 setup(
     name="pseudoflow",
-    version="2020.6.1",
+    version="2022.12.0",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3",
@@ -84,7 +84,7 @@ setup(
     long_description=readme,
     packages=find_packages("src"),
     package_dir={"": "src"},
-    install_requires=["six"],
+    install_requires=[],
     ext_modules=extensions,
     cmdclass={"build_ext": build_ext_new},
     zip_safe=False,
