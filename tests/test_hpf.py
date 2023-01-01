@@ -1,3 +1,4 @@
+import igraph
 import networkx as nx
 import pytest
 from pseudoflow import hpf
@@ -5,7 +6,6 @@ from pseudoflow import hpf
 
 @pytest.fixture()
 def G():
-
     G = nx.DiGraph()
     G.add_edges_from([(0, 1), (1, 2)])
 
@@ -551,3 +551,28 @@ def test_source_adjacent_arcs_with_negative_multiplier_raises_valueerror():
             lambdaRange=[0, 5],
             roundNegativeCapacity=False,
         )
+
+
+def test_for_igraph_support():
+    from pseudoflow import hpf
+
+    G = igraph.Graph()
+    G.add_vertices(range(3))
+    G.add_edges([(0, 1), (1, 2)], attributes={"const": [1, 9], "mult": [5, -3]})
+
+    source = 0
+    sink = 2
+    lambdaRange = [0.0, 2.0]
+
+    breakpoints, cuts, info = hpf(
+        G,
+        source,
+        sink,
+        const_cap="const",
+        mult_cap="mult",
+        lambdaRange=lambdaRange,
+        roundNegativeCapacity=False,
+    )
+
+    assert breakpoints == [1.0, 2.0]
+    assert cuts == {0: [1, 1], 1: [0, 1], 2: [0, 0]}
