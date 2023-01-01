@@ -84,7 +84,7 @@ setup(
     long_description=readme,
     packages=find_packages("src"),
     package_dir={"": "src"},
-    install_requires=["six"],
+    install_requires=[],
     ext_modules=extensions,
     cmdclass={"build_ext": build_ext_new},
     zip_safe=False,
