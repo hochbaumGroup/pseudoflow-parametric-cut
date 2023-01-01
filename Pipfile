@@ -5,9 +5,9 @@ verify_ssl = true
 
 [dev-packages]
 pytest = "*"
-pytest-runner = "*"
 networkx = "*"
 twine = "*"
+igraph = "*"
 
 [packages]
 pseudoflow = {editable = true,path = "."}
