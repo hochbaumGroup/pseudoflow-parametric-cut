@@ -1,6 +1,7 @@
 from ctypes import c_int, c_double, cast, byref, POINTER, cdll
-from six.moves import xrange
 import os
+
+from pseudoflow.python.graph_wrapper import NetworkxGraphWrapper, IgraphGraphWrapper
 
 PATH = os.path.dirname(__file__)
 libhpf = cdll.LoadLibrary(os.path.join(PATH, os.pardir, "libhpf.so"))
@@ -12,8 +13,8 @@ def _c_arr(c_type, size, init):
 
 
 def _get_arcmatrix(G, const_cap, mult_cap, source, sink):
-    nNodes = G.number_of_nodes()
-    nArcs = G.number_of_edges()
+    nNodes = G.num_nodes()
+    nArcs = G.num_edges()
 
     nodeNames = []
     nodeDict = {}
@@ -38,14 +39,14 @@ def _get_arcmatrix(G, const_cap, mult_cap, source, sink):
             data[mult_cap] if mult_cap else 0,
         ]
 
-    return (nodeNames, nodeDict, map(lambda x: float(x), linearArcMatrix))
+    return (nodeNames, nodeDict, list(map(lambda x: float(x), linearArcMatrix)))
 
 
 def _create_c_input(
-    G, nodeDict, source, sink, arcMatrix, lambdaRange, roundNegativeCapacity
+    nodeDict, source, sink, arcMatrix, lambdaRange, roundNegativeCapacity
 ):
-    nNodes = G.number_of_nodes()
-    nArcs = G.number_of_edges()
+    nNodes = len(nodeDict)
+    nArcs = len(arcMatrix)
     c_numNodes = c_int(nNodes)
     c_numArcs = c_int(nArcs)
     c_source = c_int(nodeDict[source])
@@ -85,7 +86,6 @@ def _create_c_output():
 
 
 def _solve(c_input, c_output):
-
     hpf_solve = libhpf.hpf_solve
     hpf_solve.argtypes = [
         c_int,
@@ -125,19 +125,19 @@ def _cleanup(c_output):
 
 def _check_multipliers_sink_adjacent_negative(G, sink, mult_cap):
     for u in G.predecessors(sink):
-        if G[u][sink][mult_cap] > 0:
+        if G.edge_attribute_value(u, sink, mult_cap) > 0:
             raise ValueError(
                 "Sink adjacent arcs should have non-positive multipliers. Arc (%s, %s = sink) has a multiplier of %f. Please reverse graph."
-                % (u, sink, G[u][sink][mult_cap])
+                % (u, sink, G.edge_attribute_value(u, sink, mult_cap))
             )
 
 
 def _check_multipliers_source_adjacent_positive(G, source, mult_cap):
     for v in G.successors(source):
-        if G[source][v][mult_cap] < 0:
+        if G.edge_attribute_value(source, v, mult_cap) < 0:
             raise ValueError(
                 "Source adjacent arcs should have non-negative multipliers. Arc (%s = source, %s) has a multiplier of %f. Please reverse graph."
-                % (source, v, G[source][v][mult_cap])
+                % (source, v, G.edge_attribute_value(source, v, mult_cap))
             )
 
 
@@ -174,6 +174,14 @@ def hpf(
     lambdaRange=None,
     roundNegativeCapacity=False,
 ):
+    if "networkx" in G.__module__:
+        G = NetworkxGraphWrapper(G)
+    elif "igraph" in G.__module__:
+        G = IgraphGraphWrapper(G)
+    else:
+        raise TypeError(
+            "Graph should be networkx or igraph type. Please convert graph to one of those types."
+        )
 
     if mult_cap:
         parametric = True
@@ -188,7 +196,7 @@ def hpf(
     )
 
     c_input = _create_c_input(
-        G, nodeDict, source, sink, arcMatrix, lambdaRange, roundNegativeCapacity
+        nodeDict, source, sink, arcMatrix, lambdaRange, roundNegativeCapacity
     )
     c_output = _create_c_output()
 
