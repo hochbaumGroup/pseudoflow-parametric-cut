@@ -159,7 +159,7 @@ typedef struct CutProblem
 	uint numSinkSet;
 	uint numArcs;
 	uint solved;
-	long double lambdaValue;
+	double lambdaValue;
 	Arc *arcList;
 	Node *nodeList;
 	double cutValue;
@@ -176,7 +176,7 @@ typedef struct Root
 
 typedef struct Breakpoint
 {
-	long double lambdaValue;
+	double lambdaValue;
 	uint* sourceSetIndicator;
 	struct Breakpoint *next;
 } Breakpoint;
@@ -224,8 +224,8 @@ static Breakpoint *firstBreakpoint = NULL;
 static uint useParametricCut = 1;
 static uint roundNegativeCapacity = 0;
 
-static long double LAMBDA_LOW;
-static long double LAMBDA_HIGH;
+static double LAMBDA_LOW;
+static double LAMBDA_HIGH;
 
 // memory management
 static uint * all_sink = NULL;
@@ -529,7 +529,7 @@ static void printCutProblem(CutProblem *p){
     printf("numSink: %u\n" ,p->numSinkSet);
     printf("numArcs: %u\n" ,p->numArcs);
     printf("solved: %u\n" ,p->solved);
-    printf("lambda:%.12Lf\n" ,p->lambdaValue);
+    printf("lambda:%.12lf\n" ,p->lambdaValue);
     int i;
     printf("[from, to](capacity,constant,multiplier)\n");
     for(i=0;i<p->numArcs;++i)
@@ -1378,7 +1378,7 @@ pseudoflowPhase1
 	}
 }
 
-static void prepareOutput (int * numBreakpoints, int ** cuts, long double ** breakpoints, int stats[5] )
+static void prepareOutput (int * numBreakpoints, int ** cuts, double ** breakpoints, int stats[5] )
 {
 /*************************************************************************
 printOutput
@@ -1402,9 +1402,9 @@ printOutput
 		currentBreakpoint = currentBreakpoint->next;
 	}
 
-	long double* breakpointsPointer;
+	double* breakpointsPointer;
 	/* print lambda values */
-	if ((breakpointsPointer = (long double *)malloc(*numBreakpoints * sizeof(long double))) == NULL)
+	if ((breakpointsPointer = (double *)malloc(*numBreakpoints * sizeof(double))) == NULL)
 	{
 		printf("Could not allocate memory.\n");
 		exit(0);
@@ -1413,7 +1413,7 @@ printOutput
 	currentBreakpoint = firstBreakpoint;
 	for (i = 0; i < *numBreakpoints; i++)
 	{
-		breakpointsPointer[i] = (long double) currentBreakpoint->lambdaValue;
+		breakpointsPointer[i] = (double) currentBreakpoint->lambdaValue;
 		currentBreakpoint = currentBreakpoint->next;
 	}
 
@@ -1443,7 +1443,7 @@ printOutput
 
 
 static void copyArcNew(CutProblem *problem, int *nodeMap, Arc *old, Arc *new,
-	long double lambda)
+	double lambda)
 /*************************************************************************
 copyArcNew - copy basic info arc and point to new nodes
 *************************************************************************/
@@ -1462,7 +1462,7 @@ copyArcNew - copy basic info arc and point to new nodes
         }
         else
         {
-            printf("Negative capacity for lambda equal to %Lf. Set roundNegativeCapacity to 1 if the value should be rounded to 0.\n",problem->lambdaValue);
+            printf("Negative capacity for lambda equal to %lf. Set roundNegativeCapacity to 1 if the value should be rounded to 0.\n",problem->lambdaValue);
             exit(0);
         }
     }
@@ -1483,7 +1483,7 @@ copyArcNew - copy basic info arc and point to new nodes
 	++ new->to->numAdjacent;
 }
 
-static void copyArcAdd(Arc *old, Arc *new, long double lambda)
+static void copyArcAdd(Arc *old, Arc *new, double lambda)
 /*************************************************************************
 copyArcAdd - update arc by adding another
 *************************************************************************/
@@ -1499,7 +1499,7 @@ copyArcAdd - update arc by adding another
         }
         else
         {
-            printf("Negative capacity for lambda equal to %Lf. Set roundNegativeCapacity to 1 if the value should be rounded to 0.\n", lambda);
+            printf("Negative capacity for lambda equal to %lf. Set roundNegativeCapacity to 1 if the value should be rounded to 0.\n", lambda);
             exit(0);
         }
     }
@@ -1528,7 +1528,7 @@ destroyProblem - Destruct function for CutProblem struct
 
 static void initializeContractedProblem(CutProblem *problem, Node *nodeListProblem,
 	uint numNodesProblem, Arc *arcListProblem, uint numArcsProblem,
-	const long double lambdaValue, uint *solutionLow, uint *solutionHigh,
+	const double lambdaValue, uint *solutionLow, uint *solutionHigh,
     int cacheId)
 /*************************************************************************
 initializeContractedProblem - Setup problems for parametric cut
@@ -1822,7 +1822,7 @@ initializeParametricCut - Set up data structures for parametric cut
     //free(all_source);
 }
 
-static void addBreakpoint(long double lambdaValue, uint *sourceSetIndicator)
+static void addBreakpoint(double lambdaValue, uint *sourceSetIndicator)
 /*************************************************************************
 addBreakpoint - Adds a breakpoint to the linkedlist
 *************************************************************************/
@@ -2149,8 +2149,8 @@ static double internalCutCapacity(uint *optimalSourceSetIndicator) {
 
 static double computeIntersect(uint *difference, double K12)
 {
-    long double constant = K12;
-    long double multiplier = 0;
+    double constant = K12;
+    double multiplier = 0;
 
     for (int i = 0; i < numArcsSuper; i++)
     {
@@ -2180,7 +2180,7 @@ parametricCut - Recursive function that solves the parametric cut problem
 *************************************************************************/
 {
 	// print low, high + breakpoints
-	//printf("Lambda High: %.4Lf\nLambda Low: %.4Lf\n",highProblem->lambdaValue, lowProblem->lambdaValue);
+	//printf("Lambda High: %.4lf\nLambda Low: %.4lf\n",highProblem->lambdaValue, lowProblem->lambdaValue);
 
     // determine difference between source sets of cut.
     uint *pdifference_low_high;
@@ -2202,9 +2202,9 @@ parametricCut - Recursive function that solves the parametric cut problem
         // 	printf("K low: %lf, high; %lf, diff: %lf\n", Klow, Khigh, K12);
 				// printf("pdiff_low_high: %u\n", *pdifference_low_high);
 
-        long double lambdaIntersect = computeIntersect(pdifference_low_high, K12);
+        double lambdaIntersect = computeIntersect(pdifference_low_high, K12);
 
-        // printf("Intersect: %.15Lf\n", lambdaIntersect);
+        // printf("Intersect: %.15lf\n", lambdaIntersect);
 
         // find minimal and maximal source set at lambdaIntersect.
         // Add/subtract TOL to prevent numerical issues.
@@ -2244,12 +2244,12 @@ parametricCut - Recursive function that solves the parametric cut problem
             // printf("Recursion\n");
 
             /* recurse for lower subinterval */
-				// printf("Running parametric with low %.15Lf and mid %.15Lf\n",
+				// printf("Running parametric with low %.15lf and mid %.15lf\n",
 				// 			lowProblem->lambdaValue, minimalIntersect.lambdaValue);
     		parametricCut(lowProblem, &minimalIntersect);
 
     		/* recurse for higher subinterval */
-				// printf("Running parametric with mid %.15Lf and high %.15Lf\n",
+				// printf("Running parametric with mid %.15lf and high %.15lf\n",
 				// 			maximalIntersect.lambdaValue, highProblem->lambdaValue);
     		parametricCut(&maximalIntersect, highProblem);
 
@@ -2318,8 +2318,8 @@ int cmpArc(const void *a, const void *b){
 }
 
 void hpf_solve(int numNodesIn, int numArcsIn, int sourceIn, int sinkIn, double * arcMatrix,
-	long double lambdaRange[2], int roundNegativeCapacityIn, int * numBreakpoints, int ** cuts,
-	long double ** breakpoints, int stats[5], double times[3] )
+	double lambdaRange[2], int roundNegativeCapacityIn, int * numBreakpoints, int ** cuts,
+	double ** breakpoints, int stats[5], double times[3] )
 /*************************************************************************
 main - Main function
 *************************************************************************/
@@ -2389,7 +2389,7 @@ main - Main function
 	}
 	else
 	{
-		printf("Solving problem with lambda value %.15Lf\n", lowProblem.lambdaValue);
+		printf("Solving problem with lambda value %.15lf\n", lowProblem.lambdaValue);
 		solveProblem(&lowProblem,0);
 		/* add solution as breakpoint */
 		addBreakpoint(lowProblem.lambdaValue, lowProblem.optimalSourceSetIndicator);

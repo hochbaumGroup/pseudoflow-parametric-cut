@@ -97,7 +97,7 @@
 #include "../core/libhpf.h"
 
 static void readData(char *filename, int* numNodes, int* numArcs, int *source, int *sink,
-	double ** arcMatrixPointer, long double lambdaRange[2], int * roundNegativeCapacity)
+	double ** arcMatrixPointer, double lambdaRange[2], int * roundNegativeCapacity)
 /*************************************************************************
 readData
 *************************************************************************/
@@ -136,7 +136,7 @@ readData
 			switch (*buffer)
 			{
 			case 'p': /* initialize problem */
-				sscanf(buffer, "p %d %d %Lf %Lf %d\n", numNodes, numArcs, &lambdaRange[0], &lambdaRange[1], roundNegativeCapacity);
+				sscanf(buffer, "p %d %d %lf %lf %d\n", numNodes, numArcs, &lambdaRange[0], &lambdaRange[1], roundNegativeCapacity);
 
 				if ((arcMatrix = (double *)malloc(*numArcs * 4 * sizeof(double))) == NULL)
 				{
@@ -310,7 +310,7 @@ readData
 	*arcMatrixPointer = arcMatrix;
 }
 
-static void writeOutput (char *filename, int numBreakpoints, int numNodes, long double* breakpoints, int* cuts, int* stats, double* times)
+static void writeOutput (char *filename, int numBreakpoints, int numNodes, double* breakpoints, int* cuts, int* stats, double* times)
 {
 /*************************************************************************
 writeOutput
@@ -336,7 +336,7 @@ writeOutput
 	fprintf(f, "l ");
 	for (i = 0; i < numBreakpoints; i++)
 	{
-		fprintf(f, "%.15Lf", breakpoints[i]);
+		fprintf(f, "%.15lf", breakpoints[i]);
 		if (i < numBreakpoints - 1)
 		{
 			fprintf(f, " ");
@@ -388,14 +388,14 @@ main - Main function
 	int source;
 	int sink;
 	double* arcMatrix;
-	long double lambdaRange[2];
+	double lambdaRange[2];
 	int roundNegativeCapacity;
 
 	readData(argv[1], &numNodes, &numArcs, &source, &sink, &arcMatrix, lambdaRange, &roundNegativeCapacity);
 
 	printf("NumNodes: %d\n", numNodes);
 	printf("NumArcs: %d\n", numArcs);
-	printf("Lambda Range: [%.15Lf, %.15Lf]\n", lambdaRange[0], lambdaRange[1]);
+	printf("Lambda Range: [%.15lf, %.15lf]\n", lambdaRange[0], lambdaRange[1]);
 	printf("Round if negative: %d\n", roundNegativeCapacity);
 	// printf("Arc matrix:\n");
 	// for (int i = 0; i < numArcs; ++i)
@@ -407,7 +407,7 @@ main - Main function
 	// prepare output solver
 	int numBreakpoints;
 	int *cuts;
-	long double *breakpoints;
+	double *breakpoints;
 	int stats[5];
 	double times[3];
 
