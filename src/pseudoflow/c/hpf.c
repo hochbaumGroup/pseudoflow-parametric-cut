@@ -96,7 +96,8 @@
 #include "stdlib.h"
 #include "../core/libhpf.h"
 
-static void readData(char *filename, int* numNodes, int* numArcs, int *source, int *sink, double ** arcMatrixPointer, double lambdaRange[2], int * roundNegativeCapacity)
+static void readData(char *filename, int* numNodes, int* numArcs, int *source, int *sink,
+	double ** arcMatrixPointer, long double lambdaRange[2], int * roundNegativeCapacity)
 /*************************************************************************
 readData
 *************************************************************************/
@@ -135,7 +136,7 @@ readData
 			switch (*buffer)
 			{
 			case 'p': /* initialize problem */
-				sscanf(buffer, "p %d %d %lf %lf %d\n", numNodes, numArcs, &lambdaRange[0], &lambdaRange[1], roundNegativeCapacity);
+				sscanf(buffer, "p %d %d %Lf %Lf %d\n", numNodes, numArcs, &lambdaRange[0], &lambdaRange[1], roundNegativeCapacity);
 
 				if ((arcMatrix = (double *)malloc(*numArcs * 4 * sizeof(double))) == NULL)
 				{
@@ -151,7 +152,7 @@ readData
 					/* check if source is valid */
 					if (currentNode >= *numNodes || currentNode < 0)
 					{
-						printf("Nodes are labeled from 0 to <number of nodes>  - 1\n");
+						printf("A: Nodes are labeled from 0 to <number of nodes>  - 1\n");
 						exit(0);
 					}
 					/* check if source is assigned */
@@ -171,7 +172,7 @@ readData
 					/* check if sink is valid */
 					if (currentNode >= *numNodes || currentNode < 0)
 					{
-						printf("Nodes are labeled from 0 to <number of nodes>  - 1\n");
+						printf("B: Nodes are labeled from 0 to <number of nodes>  - 1\n");
 						exit(0);
 					}
 					/* check if sink is assigned */
@@ -199,33 +200,45 @@ readData
 				if (isSinkAssigned == 0 || isSourceAssigned == 0)
 				{
 					printf("Source and sink need to be defined before arcs are defined.\n");
+					printf("from %d to %d const cap %lf multi cap %lf \n",
+									from, to, constantCapacity, multiplierCapacity);
 					exit(0);
 				}
 
 				/* assign arc */
 				if (from < 0 || to < 0 || from >= *numNodes || to >= *numNodes )
 				{
-					printf("Nodes are labeled from 0 to <number of nodes>  - 1\n");
+					printf("C: Nodes are labeled from 0 to <number of nodes>  - 1\n");
+					printf("from %d to %d const cap %lf multi cap %lf \n",
+									from, to, constantCapacity, multiplierCapacity);
 					exit(0);
 				}
 				else if (from == to)
 				{
 					printf("Node %u has a self loop which is not allowed\n", from);
+					printf("from %d to %d const cap %lf multi cap %lf \n",
+									from, to, constantCapacity, multiplierCapacity);
 					exit(0);
 				}
 				else if (multiplierCapacity > 0 && from != *source)
 				{
 					printf("Only source adjacent arcs can have a strictly positive capacity multiplier\n");
+					printf("from %d to %d const cap %lf multi cap %lf \n",
+									from, to, constantCapacity, multiplierCapacity);
 					exit(0);
 				}
 				else if (multiplierCapacity < 0 && to != *sink)
 				{
 					printf("Only sink adjacent arcs can have a strictly negative capacity multiplier\n");
+					printf("from %d to %d const cap %lf multi cap %lf \n",
+									from, to, constantCapacity, multiplierCapacity);
 					exit(0);
 				}
 				else if (arcCount >= *numArcs)
 				{
 					printf("Incorrect number of arcs specified\n");
+					printf("from %d to %d const cap %lf multi cap %lf \n",
+									from, to, constantCapacity, multiplierCapacity);
 					exit(0);
 				}
 				else if (to==*source || from==*sink)
@@ -258,6 +271,7 @@ readData
 
 	if (numRemovedArcs>0)
 	{
+		printf("There are %d arcs removed\n", numRemovedArcs);
 	  *numArcs-= numRemovedArcs;
 	  if ((arcMatrixNew = (double *)malloc(*numArcs * sizeof(double))) == NULL)
 	    {
@@ -296,7 +310,7 @@ readData
 	*arcMatrixPointer = arcMatrix;
 }
 
-static void writeOutput (char *filename, int numBreakpoints, int numNodes, double* breakpoints, int* cuts, int* stats, double* times)
+static void writeOutput (char *filename, int numBreakpoints, int numNodes, long double* breakpoints, int* cuts, int* stats, double* times)
 {
 /*************************************************************************
 writeOutput
@@ -322,7 +336,7 @@ writeOutput
 	fprintf(f, "l ");
 	for (i = 0; i < numBreakpoints; i++)
 	{
-		fprintf(f, "%.12lf", breakpoints[i]);
+		fprintf(f, "%.15Lf", breakpoints[i]);
 		if (i < numBreakpoints - 1)
 		{
 			fprintf(f, " ");
@@ -374,43 +388,44 @@ main - Main function
 	int source;
 	int sink;
 	double* arcMatrix;
-	double lambdaRange[2];
+	long double lambdaRange[2];
 	int roundNegativeCapacity;
 
 	readData(argv[1], &numNodes, &numArcs, &source, &sink, &arcMatrix, lambdaRange, &roundNegativeCapacity);
 
 	printf("NumNodes: %d\n", numNodes);
 	printf("NumArcs: %d\n", numArcs);
-	printf("Lambda Range: [%lf, %lf]\n", lambdaRange[0], lambdaRange[1]);
+	printf("Lambda Range: [%.15Lf, %.15Lf]\n", lambdaRange[0], lambdaRange[1]);
 	printf("Round if negative: %d\n", roundNegativeCapacity);
-	printf("Arc matrix:\n");
-	for (int i = 0; i < numArcs; ++i)
-	{
-		printf("Row %d: [%.2lf, %.2lf, %.2lf, %.2lf]\n", i, arcMatrix[i * 4 + 0 ], arcMatrix[i * 4 + 1 ], arcMatrix[i * 4 + 2 ], arcMatrix[i * 4 + 3 ]);
-	}
+	// printf("Arc matrix:\n");
+	// for (int i = 0; i < numArcs; ++i)
+	// {
+	// 	printf("Row %d: [%.2lf, %.2lf, %.2lf, %.2lf]\n", i, arcMatrix[i * 4 + 0 ], arcMatrix[i * 4 + 1 ], arcMatrix[i * 4 + 2 ], arcMatrix[i * 4 + 3 ]);
+	// }
 
 
 	// prepare output solver
 	int numBreakpoints;
 	int *cuts;
-	double *breakpoints;
+	long double *breakpoints;
 	int stats[5];
 	double times[3];
 
-	hpf_solve(numNodes, numArcs, source, sink, arcMatrix, lambdaRange, roundNegativeCapacity, &numBreakpoints, &cuts, &breakpoints, stats, times );
+	hpf_solve(numNodes, numArcs, source, sink, arcMatrix, lambdaRange, roundNegativeCapacity,
+		&numBreakpoints, &cuts, &breakpoints, stats, times );
 
 	printf("Stats: [%d, %d, %d, %d, %d]\n", stats[0],stats[1],stats[2],stats[3],stats[4]);
 	printf("times: [%lf, %lf, %lf]\n", times[0],times[1],times[2]);
 	printf("Num breakpoints: %d\n", numBreakpoints);
-	printf("breakpoints:\n");
-	for (int i = 0; i < numBreakpoints; ++i)
-	{
-		printf("Breakpoint: %lf\n", breakpoints[i]);
-		for (int j = 0; j < numNodes; j++)
-		{
-			printf("Cut indicator: %d\n", cuts[i * (int) numNodes+ j ]);
-		}
-	}
+	// printf("breakpoints:\n");
+	// for (int i = 0; i < numBreakpoints; ++i)
+	// {
+	// 	printf("Breakpoint: %lf\n", breakpoints[i]);
+	// 	for (int j = 0; j < numNodes; j++)
+	// 	{
+	// 		printf("Cut indicator: %d\n", cuts[i * (int) numNodes+ j ]);
+	// 	}
+	// }
 
 	writeOutput(argv[2], numBreakpoints, numNodes, breakpoints, cuts, stats, times);
 
