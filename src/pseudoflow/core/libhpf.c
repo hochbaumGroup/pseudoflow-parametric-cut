@@ -329,8 +329,6 @@ initializeArc
 	ac->direction = 1;
 	ac->constant = 0.0;
 	ac->multiplier = 0.0;
-    //ac->from_number = -1;
-    //ac->to_number = -1;
 }
 
 static void liftAll (Node *rootNode)
@@ -836,6 +834,21 @@ static void freeCaches(void)
         if(nodeListCache[i]!=NULL) free(nodeListCache[i]);
         if(sourceSetCache[i]!=NULL) free(sourceSetCache[i]);
         if(sinkSetCache[i]!=NULL) free(sinkSetCache[i]);
+    }
+
+    all_sink = NULL;
+    all_source = NULL;
+    nodeMap = NULL;
+    sourceAdjacentArcIndices = NULL;
+    sinkAdjacentArcIndices = NULL;
+    pdifferenceCache = NULL;
+
+    for(int i=0; i<2; i++)
+    {
+        arcListCache[i] = NULL;
+        nodeListCache[i] = NULL;
+        sourceSetCache[i] = NULL;
+        sinkSetCache[i] = NULL;
     }
 }
 
@@ -1469,14 +1482,10 @@ copyArcNew - copy basic info arc and point to new nodes
 
 
 	/* set start and end node */
-	//newIndexFrom = nodeMap[getArcFromNumber(old)]; //old->from->number];
 	newIndexFrom = nodeMap[old->from->number];
-	//newIndexTo = nodeMap[getArcToNumber(old)];//->to->number];
 	newIndexTo = nodeMap[old->to->number];
 	new->from = &problem->nodeList[newIndexFrom];
-	//new->from_number = new->from->number;
 	new->to = &problem->nodeList[newIndexTo];
-	//new->to_number = new->to->number;
 
 	/* update degree nodes*/
 	++ new->from->numAdjacent;
@@ -1511,13 +1520,9 @@ static void destroyProblem(CutProblem *problem, int destroySourceSetIndicator)
 destroyProblem - Destruct function for CutProblem struct
 *************************************************************************/
 {
-	//free(problem->sourceSet);
 	problem->sourceSet = NULL;
-	//free(problem->sinkSet);
 	problem->sinkSet = NULL;
-	//free(problem->nodeList);
 	problem->nodeList = NULL;
-	//free(problem->arcList);
 	problem->arcList = NULL;
     if (destroySourceSetIndicator)
     {
@@ -1539,7 +1544,6 @@ initializeContractedProblem - Setup problems for parametric cut
     uint currentSourceSet = 0;
     uint currentSinkSet = 0;
     uint currentArc = 0;
-	//int *nodeMap; /* indicator index of node in new nodeList. */
 
 	/* set cut parameters */
 	problem->cutValue = 0;
@@ -1566,16 +1570,6 @@ initializeContractedProblem - Setup problems for parametric cut
 
     for (i = 0; i < numNodesProblem; i++)
 	{
-		/*if (i == sourceSuper)
-		{
-			nodeMap[i] = 0;
-		}
-		else if (i == sinkSuper)
-		{
-			nodeMap[i] = 1;
-		}
-        else
-        */
         if (i == sourceSuper || solutionLow[i] == 1)
         {   // Source set nodes
 			nodeMap[i] = 0;
@@ -1650,7 +1644,6 @@ initializeContractedProblem - Setup problems for parametric cut
 		}
 	}
 
-    //int *sourceAdjacentArcIndices, *sinkAdjacentArcIndices;
 
     /* allocate space for source and sink arc indices */
 	if (sourceAdjacentArcIndices==NULL && (sourceAdjacentArcIndices = (int *)malloc( numNodesProblem*  sizeof(int))) == NULL)
@@ -1688,9 +1681,7 @@ initializeContractedProblem - Setup problems for parametric cut
 	for (i = 0; i < numArcsProblem; i++)
 	{
 		newIndexFrom = nodeMap[arcListProblem[i].from->number];
-		//newIndexFrom = nodeMap[getArcFromNumber(&arcListProblem[i])]; //arcListProblem[i].from->number];
 		newIndexTo = nodeMap[arcListProblem[i].to->number];
-		//newIndexTo = nodeMap[ getArcToNumber(&arcListProblem[i])];  //arcListProblem[i].to->number];
 
 		if (newIndexFrom == newIndexTo || newIndexTo==0 || newIndexFrom==1 || (newIndexFrom == 0 && newIndexTo == 1))
 		{
@@ -1732,56 +1723,7 @@ initializeContractedProblem - Setup problems for parametric cut
 	problem->numArcs = currentArc;
 
 
-	/* copy arcs */
-	/*
-    currentArc = 0;
-	for (i = 0; i < numArcsProblem; i++)
-	{
-		newIndexFrom = nodeMap[getArcFromNumber(&arcListProblem[i])];  //arcListProblem[i].from->number];
-		newIndexTo = nodeMap[getArcToNumber(&arcListProblem[i])]; //arcListProblem[i].to->number];
 
-		if (newIndexFrom == newIndexTo || newIndexTo==0 || newIndexFrom==1 ||  (newIndexFrom == 0 && newIndexTo == 1))
-		{
-		}
-		else if (newIndexFrom == 0)
-		{
-			if (sourceAdjacentArcIndices[newIndexTo] == currentArc )
-			{
-				copyArcNew(problem, nodeMap, &arcListProblem[i], &problem->arcList[currentArc], lambdaValue);
-				++currentArc;
-			}
-			else
-			{
-				copyArcAdd(&arcListProblem[i], &problem->arcList[sourceAdjacentArcIndices[newIndexTo]], lambdaValue);
-			}
-		}
-		else if (newIndexTo == 1)
-		{
-			if (sinkAdjacentArcIndices[newIndexFrom] == currentArc)
-			{
-				copyArcNew(problem, nodeMap, &arcListProblem[i], &problem->arcList[currentArc], lambdaValue);
-				++currentArc;
-			}
-			else
-			{
-				copyArcAdd(&arcListProblem[i], &problem->arcList[sinkAdjacentArcIndices[newIndexFrom]], lambdaValue);
-			}
-		}
-		else
-		{
-			copyArcNew(problem, nodeMap, &arcListProblem[i], &problem->arcList[currentArc], lambdaValue);
-			++currentArc;
-		}
-	}
-    */
-
-    /* free nodeMap*/
-	//free(nodeMap);
-	//nodeMap = NULL;
-    //free(sourceAdjacentArcIndices);
-    //sourceAdjacentArcIndices = NULL;
-    //free(sinkAdjacentArcIndices);
-    //sinkAdjacentArcIndices = NULL;
 }
 
 static void initializeParametricCut(CutProblem *lowProblem, CutProblem *highProblem)
@@ -1789,7 +1731,6 @@ static void initializeParametricCut(CutProblem *lowProblem, CutProblem *highProb
 initializeParametricCut - Set up data structures for parametric cut
 *************************************************************************/
 {
-    //uint *all_source, *all_sink;
 	// disable contraction by passing dummy low/high problem solutions.
     if (all_sink==NULL && (all_sink = (uint *)malloc(numNodesSuper *  sizeof(uint))) == NULL)
 	{
@@ -1818,8 +1759,6 @@ initializeParametricCut - Set up data structures for parametric cut
 			arcListSuper, numArcsSuper,LAMBDA_HIGH, all_sink, all_source, 1);
 	}
 
-    //free(all_sink);
-    //free(all_source);
 }
 
 static void addBreakpoint(double lambdaValue, uint *sourceSetIndicator)
@@ -1830,7 +1769,6 @@ addBreakpoint - Adds a breakpoint to the linkedlist
 	Breakpoint *newBreakpoint;
 	uint i;
 
-    // printf("New breakpoint: %lf\n", lambdaValue);
 
 	/* allocate memory for breakpoint*/
 	if ((newBreakpoint= (Breakpoint*)malloc(sizeof(Breakpoint))) == NULL)
@@ -2117,14 +2055,6 @@ static void differenceSourceSets(uint **ppdifference,
     for (int i = 0; i < numNodesSuper; i++)
     {
       pdifference[i] = highOptimalSourceIndicator[i] - lowOptimalSourceIndicator[i];
-      /*
-      if(highOptimalSourceIndicator[i] || !lowOptimalSourceIndicator[i]){
-          printf("ok %d %d\n", highOptimalSourceIndicator[i], lowOptimalSourceIndicator[i]);
-      }else{
-          printf("nok %d %d\n", highOptimalSourceIndicator[i], lowOptimalSourceIndicator[i]);
-      }
-      */
-      assert((highOptimalSourceIndicator[i] || !lowOptimalSourceIndicator[i]) && "node in source of high but not low");
     }
 }
 
@@ -2140,7 +2070,8 @@ static double internalCutCapacity(uint *optimalSourceSetIndicator) {
         arc_capacity = arcListSuper[i].constant;
         if (optimalSourceSetIndicator[from] == 1
 					&& optimalSourceSetIndicator[to] == 0
-					&& from != sourceSuper && to != sinkSuper) {
+					&& from != sourceSuper && to != sinkSuper)
+        {
             capacity += arc_capacity;
         }
     }
@@ -2170,7 +2101,6 @@ static double computeIntersect(uint *difference, double K12)
         }
     }
 
-    // printf("Constant: %lf, Mult: %lf\n", constant, multiplier);
     return constant / (- multiplier);
 }
 
@@ -2179,8 +2109,6 @@ static void parametricCut(CutProblem *lowProblem, CutProblem *highProblem)
 parametricCut - Recursive function that solves the parametric cut problem
 *************************************************************************/
 {
-	// print low, high + breakpoints
-	//printf("Lambda High: %.4lf\nLambda Low: %.4lf\n",highProblem->lambdaValue, lowProblem->lambdaValue);
 
     // determine difference between source sets of cut.
     uint *pdifference_low_high;
@@ -2189,7 +2117,6 @@ parametricCut - Recursive function that solves the parametric cut problem
     uint num_nodes_different_low_high = sum_array_uint(pdifference_low_high,
 			numNodesSuper);
 
-    //printf("Difference in nodes = %u\n", num_nodes_different_low_high);
 	/* find lambda value for which the optimal cut functions(expressed as a function of lambda)
 	for the lower bound and upper bound problem intersect. */
 	if (num_nodes_different_low_high > 0)
@@ -2198,13 +2125,8 @@ parametricCut - Recursive function that solves the parametric cut problem
         double Klow = internalCutCapacity(lowProblem->optimalSourceSetIndicator);
         double Khigh = internalCutCapacity(highProblem->optimalSourceSetIndicator);
         double K12 = Klow - Khigh;
-				// if (Klow != 0.0 || Khigh != 0.0)
-        // 	printf("K low: %lf, high; %lf, diff: %lf\n", Klow, Khigh, K12);
-				// printf("pdiff_low_high: %u\n", *pdifference_low_high);
 
         double lambdaIntersect = computeIntersect(pdifference_low_high, K12);
-
-        // printf("Intersect: %.15lf\n", lambdaIntersect);
 
         // find minimal and maximal source set at lambdaIntersect.
         // Add/subtract TOL to prevent numerical issues.
@@ -2230,7 +2152,6 @@ parametricCut - Recursive function that solves the parametric cut problem
         differenceSourceSets(&pdifference_min_max_intersect, minimalIntersect.optimalSourceSetIndicator,
 					maximalIntersect.optimalSourceSetIndicator);
         uint num_nodes_different_min_max = sum_array_uint(pdifference_min_max_intersect, numNodesSuper);
-        //free(pdifference_min_max_intersect);
 
         if (num_nodes_different_min_max > 0 )
         {
@@ -2238,33 +2159,17 @@ parametricCut - Recursive function that solves the parametric cut problem
             addBreakpoint(lambdaIntersect, minimalIntersect.optimalSourceSetIndicator);
 
         }
-        // else
-        // {
-            // Intersection is not a breakpoint and must thus separate two breakpoints. Recurse.
-            // printf("Recursion\n");
-
-            /* recurse for lower subinterval */
-				// printf("Running parametric with low %.15lf and mid %.15lf\n",
-				// 			lowProblem->lambdaValue, minimalIntersect.lambdaValue);
     		parametricCut(lowProblem, &minimalIntersect);
 
     		/* recurse for higher subinterval */
-				// printf("Running parametric with mid %.15lf and high %.15lf\n",
-				// 			maximalIntersect.lambdaValue, highProblem->lambdaValue);
     		parametricCut(&maximalIntersect, highProblem);
 
-        // }
 
         /* call destructor function */
         destroyProblem(&minimalIntersect, 1);
         destroyProblem(&maximalIntersect, 1);
 
 	}
-    else
-    {
-        // printf("Stop recursion: Same cuts!\n");
-    }
-//free(pdifference_low_high);
 }
 
 void reset_globals()
@@ -2360,7 +2265,7 @@ main - Main function
 
     //printf("c sorting arcs and initializing par cut\n");
 	initStart = clock();
-    //qsort(arcListSuper, numArcsSuper, sizeof(Arc), cmpArc);
+    qsort(arcListSuper, numArcsSuper, sizeof(Arc), cmpArc);
 	CutProblem lowProblem;
 	CutProblem highProblem;
 	initializeParametricCut(&lowProblem,&highProblem);
